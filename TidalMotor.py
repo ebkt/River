@@ -49,9 +49,10 @@ def newReading():
     for i in range(255):
         myMotor.setSpeed(i)
         time.sleep(0.01)
-    myMotor.run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
     time.sleep(1.0)
     myStepper.step(mappedLevel, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.SINGLE)
+    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
 
 
 # recommended for auto-disabling motors on shutdown!
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
     print('hello')
-    Scheduler.add_job(newReading, 'interval', seconds = 10, id='move')
+    Scheduler.add_job(newReading, 'interval', seconds = 15, id='move')
     print('added job')
     Scheduler.start()
     print('end')
