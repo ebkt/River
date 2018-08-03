@@ -12,17 +12,26 @@ import json
 from decimal import Decimal
 
 # import scheduler
+from pytz import utc
+import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+# import osc modules
+from pythonosc import osc_message_builder
+from pythonosc import udp_client
 
 # instantiate scheduler
 Scheduler = BackgroundScheduler()
+
+# start osc
+client = udp_client.SimpleUDPClient('10.100.115.165', 57120)
 
 # create a default motor object, no changes to I2C address or frequency
 mh = Adafruit_MotorHAT()
 
 # declare stepper motor to move plate
 myStepper = mh.getStepper(200, 1)  # 200 steps/rev, motor port #1
-myStepper.setSpeed(30)             # 30 RPM
+myStepper.setSpeed(120)             # RPM
 
 # declare peristaltic pump DC motor
 myMotor = mh.getMotor(3)           # it is connected to port 3 on the Adafruit MotorHAT
@@ -44,14 +53,18 @@ def newReading():
     mappedLevel = round(mapper(level, -2.67, 3.65, 0, 100))
     print("mappedLevel =")
     print(mappedLevel)
-    myStepper.step(mappedLevel, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.SINGLE)
+    msg = osc_message_builder.OscMessageBuilder(address = '/pySend')
+    msg.add_arg(level, arg_type='f')
+    msg = msg.build()
+    client.send(msg)
+    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
     myMotor.run(Adafruit_MotorHAT.FORWARD)
     for i in range(200):
         myMotor.setSpeed(i)
     time.sleep(2)
     mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
     time.sleep(1.0)
-    myStepper.step(mappedLevel, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.SINGLE)
+    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
     mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
 
 
@@ -68,7 +81,7 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', seconds = 15, id='move')
+    Scheduler.add_job(newReading, 'interval', minutes = 15, next_run_time = datetime.datetime.now())
     Scheduler.start()
     try:
         while( True ):
