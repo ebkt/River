@@ -147,7 +147,7 @@ ServerQuit.removeAll;
 			    // random resonance on the filter – lower numbers result in higher resonance, creating clear pitches
 				\rq, Pwhite(0.001, 0.008),
 
-			    // randomly select filter frequencies between these numbers, rounded to the nearest 50hz
+			    // randomly select filter frequencies in the phrygian mode, and randomly select normal pitch or up/down an octave
 				\freq, Prand((Scale.phrygian.degrees+63).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 
 			    // random mix values – 0.0 is raw samples, 1.0 is full bandpass filter mix
