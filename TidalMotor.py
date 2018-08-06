@@ -24,7 +24,7 @@ from pythonosc import udp_client
 Scheduler = BackgroundScheduler()
 
 # start osc
-client = udp_client.SimpleUDPClient('10.100.115.165', 57120)
+client = udp_client.SimpleUDPClient('10.100.114.42', 57120)
 
 # create a default motor object, no changes to I2C address or frequency
 mh = Adafruit_MotorHAT()
@@ -57,15 +57,16 @@ def newReading():
     msg.add_arg(level, arg_type='f')
     msg = msg.build()
     client.send(msg)
-    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
+    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.SINGLE)
     myMotor.run(Adafruit_MotorHAT.FORWARD)
-    for i in range(200):
+    for i in range(round(mapper(mappedLevel, 0, 100, 20, 255))):
         myMotor.setSpeed(i)
-    time.sleep(2)
+    time.sleep(10)
     mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
     time.sleep(1.0)
-    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
+    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.SINGLE)
     mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+    turnOffMotors()
 
 
 # recommended for auto-disabling motors on shutdown!
@@ -81,7 +82,7 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', minutes = 15, next_run_time = datetime.datetime.now())
+    Scheduler.add_job(newReading, 'interval', seconds = 45, next_run_time = datetime.datetime.now())
     Scheduler.start()
     try:
         while( True ):
@@ -89,4 +90,3 @@ if __name__ == '__main__':
     except ( KeyboardInterrupt ):
             turnOffMotors()
             exit()
-    
