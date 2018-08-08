@@ -62,6 +62,8 @@ def newReading():
     print(mappedSteps)
     print("of a possible 4715 steps")
     myStepper.step(mappedSteps, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
+    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
     mappedFlow = round(mapper(mappedLevel, 0, 100, 100, 255))
     print("mappedFlow = ")
     print(mappedFlow)
@@ -69,9 +71,8 @@ def newReading():
     myMotor.run(Adafruit_MotorHAT.FORWARD)
     time.sleep(10)
     mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-    time.sleep(1.0)
+    time.sleep(3)
     myStepper.step(mappedSteps, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
-    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
     turnOffMotors()
 
 
@@ -88,11 +89,11 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', minutes = 5, next_run_time = datetime.datetime.now())
+    Scheduler.add_job(newReading, 'interval', seconds = 150, next_run_time = datetime.datetime.now())
     Scheduler.start()
     try:
         while( True ):
-            time.sleep(10)
+            time.sleep(1)
     except ( KeyboardInterrupt ):
             turnOffMotors()
             exit()
