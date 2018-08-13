@@ -35,7 +35,7 @@ myStepper.setSpeed(300)             # RPM
 
 # declare peristaltic pump DC motor
 myMotor = mh.getMotor(3)           # it is connected to port 3 on the Adafruit MotorHAT
-myMotor.setSpeed(150)              # speed is set 0-255
+myMotor.setSpeed(155)              # speed is set 0-255
 
 # mapping function found on rpi forums:
 # www.raspberrypi.org/forums/viewtopic.php?t=149371
@@ -50,7 +50,7 @@ def newReading():
     level = json_data['items'][0]['latestReading']['value']
     print("level = ")
     print(level)
-    mappedLevel = round(mapper(level, -2.67, 3.65, 0, 100))
+    mappedLevel = round(mapper(level, -2.96, 4.21, 0, 100))
     print("mappedLevel =")
     print(mappedLevel)
     msg = osc_message_builder.OscMessageBuilder(address = '/pySend')
@@ -89,7 +89,7 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', seconds = 150, next_run_time = datetime.datetime.now())
+    Scheduler.add_job(newReading, 'interval', minutes = 3, next_run_time = datetime.datetime.now())
     Scheduler.start()
     try:
         while( True ):
