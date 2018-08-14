@@ -138,14 +138,14 @@ ServerQuit.removeAll;
 				        ],
 					inf),
 
-			    // each step, the selected sample should be played back at a random rate between 0.9 and 1.1
-				\rate, Pwhite(0.9, 1.1),
+			    // each step, the selected sample should be played back at a random rate
+				\rate, Pxrand([-1.0, -0.8, 0.8, 0.9, 0.95, 1.0, 1.1], inf),
 
 			    // random sample startpos between 0 and the end of the sample minus the length of the current step in the Pbind
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 
 			    // random amplitude between these numbers
-				\amp, Pexprand(0.2, 0.6),
+				\amp, Pexprand(0.5, 1.0),
 
 			    // random panning – -1.0 is hard left, 1.0 is hard right
 				\pan, Pwhite(-1.0, 1.0),
@@ -213,7 +213,7 @@ ServerQuit.removeAll;
 			        ], inf),
 				\rate, Pxrand([-0.8, -0.9, -1.0, -1.1, -1.2, 0.8, 0.9, 1.0, 1.1, 1.2], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-				\amp, Pexprand(0.7, 1),
+				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
 				\rq, Pwhite(0.002, 0.08),
 				\freq, Prand((Scale.phrygian.degrees+66).midicps,inf) * Pxrand([1, 2], inf),
