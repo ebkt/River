@@ -82,7 +82,7 @@ ServerQuit.removeAll;
 				\predelay, 0.2,
 				\revtime, 2.3,
 				\lpf, 4500,
-				\mix, 0.8,
+				\mix, 0.6,
 				\in, ~bus[\reverb],
 				\out, ~out,
 			],
@@ -121,7 +121,7 @@ ServerQuit.removeAll;
 				\instrument, \bpfbuf,
 
                 // the duration of the "clock" for triggering the next step in the pattern: random between 0.1 and 1.5 seconds
-			    \dur, Pexprand(0.1, 1.5),
+			    \dur, Pexprand(0.1, 4.5),
 
 			    // the duration of the attack stage of the envelope applied to the amplitude: random between 0.8 and 4 seconds
 				\atk, Pexprand(0.8, 4),
@@ -130,7 +130,13 @@ ServerQuit.removeAll;
 				\rel, Pexprand(5, 7),
 
 			    // nested sequence – select five samples from the \Industry folder, then five from the \Social folder, repeat indefinitely
-			   \buf, Pseq([Prand(b[\Industry][0..b[\Industry].size], 5), Prand(b[\Social][0..b[\Social].size], 5)], inf),
+			   \buf, Pseq(
+				        [
+					        Prand(b[\Industry][0..b[\Industry].size], 5),
+					        Prand(b[\Social][0..b[\Social].size], 7),
+				            Prand(b[\Nature][0..b[\Nature].size], 1),
+				        ],
+					inf),
 
 			    // each step, the selected sample should be played back at a random rate between 0.9 and 1.1
 				\rate, Pwhite(0.9, 1.1),
@@ -159,7 +165,23 @@ ServerQuit.removeAll;
 			    // the output bus is the reverb send
 				\out, ~bus[\reverb],
 		    ).play; // play this when the criteria for this event are filled by the tidal information sent in, ie. it's low tide
-		});
+
+		~percussive = 4.do{
+			    Pbind(
+			        \instrument, \swells,
+			        \dur, Pexprand(0.1, 30, inf),
+			        \atk, Pexprand(0.0, 0.3, inf),
+			        \rel, Pwhite(0.07, 0.3, inf),
+			        \freq, Prand((Scale.phrygian.degrees+75).midicps,inf) * Pxrand([0.25, 0.5, 1], inf),
+			        \modpartial, Pxrand([-1, -0.5, 0.5, 1], inf),
+			        \carpartial, Pxrand([-2, -1, -0.5, 0.5, 1], inf),
+			        \index, Pwhite(0.0, 0.5, inf),
+	                \amp, Pexprand(0.1, 0.2),
+			        \group, ~mainGrp,
+			        \out, ~bus[\reverb],
+		        ).play;
+		}
+	});
 
 	// similar to above, an event to be called at mid-low tide – 25 to 50 when the tide level is mapped from 0 to 100
 	e.add(\midLow -> {
@@ -168,12 +190,12 @@ ServerQuit.removeAll;
 		~people.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
-		~midHighIndustry.stop;
+		~midHighMix.stop;
 		~simpleRings.stop;
 
 		"midlow tide playing".postln;
 
-			~waves = Pbind(
+			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
 				\dur, Pexprand(0.1, 7.0),
 				\atk, Pexprand(0.8, 4),
@@ -204,19 +226,29 @@ ServerQuit.removeAll;
 
 	e.add(\midHigh -> {
 		~people.stop;
-		~waves.stop;
+		~midLowMix.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
 		"mid high tide playing".postln;
-			~midHighIndustry = Pbind(
+			~midHighMix = Pbind(
 				\instrument, \bpfbuf,
 				\dur, Pexprand(1.0, 3.5),
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
-		        \buf, Prand(b[\Nature][0..b[\Nature].size]++b[\Industry][0..b[\Industry].size], inf),
+		        \buf, Pwrand(
+				    [
+					Prand(b[\Social][0..b[\Social].size]),
+					Prand(b[\Industry][0..b[\Industry].size]),
+					Prand(b[\Nature][0..b[\Nature].size])
+			        ],
+				    [
+					    0.35,
+					    0.35,
+					    0.30
+			        ], inf),
 				\rate, Pwhite(-1.0,1.0),
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-				\amp, Pexprand(0.5, 1.5, inf),
+				\amp, Pexprand(0.5, 1.0, inf),
 				\bpfmix, Pwhite(0.2, 1.0),
 				\rq, Pwhite(0.002, 0.02),
 			    \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([1, 2, 3], inf),
@@ -248,8 +280,8 @@ ServerQuit.removeAll;
 
 	e.add(\highTide -> {
 		~people.stop;
-		~waves.stop;
-		~midHighIndustry.stop;
+		~midLowMix.stop;
+		~midHighMix.stop;
 		~simpleRings.stop;
 		"high tide playing".postln;
 			~marimba = Pbind(
@@ -263,23 +295,23 @@ ServerQuit.removeAll;
 				\atk, 3,
 				\sus, 1,
 				\rel, 5,
-				\amp, Pexprand(0.5, 1.5, inf),
+				\amp, Pexprand(1.0, 2.0, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
 
 		   ~highTideWaves = Pbind(
 				\instrument, \bpfbuf,
-			    \dur, Pseq([1, 0.5, 1.2, 2.1], inf),
-				\atk, Pwhite(2.0, 8.0),
+			    \dur, Pseq([4, 1.5, 2.2, 3.1], inf),
+				\atk, Pwhite(5.0, 8.0),
 				\rel, Pwhite(4.0, 10.0),
 			    \buf, Pxrand(b[\Nature][0..b[\Nature].size], inf),
-				\rate, Pwhite(-0.08,0.08).midiratio,
+				\rate, Pwhite(-0.05,0.05).midiratio,
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 			    \pan, Pwhite(-1.0, 1.0),
 				\amp, Pexprand(0.6, 1.5),
-				\bpfmix, Pwhite(0.7, 0.9),
-			    \freq, Prand((Scale.phrygian.degrees+72).midicps,inf) * Pxrand([1, 1.5, 2], inf),
+				\bpfmix, Pwhite(0.7, 1.0),
+			    \freq, Prand((Scale.phrygian.degrees+72).midicps,inf) * Pxrand([0.5, 1, 1.5], inf),
 			    \rq, Pwhite(0.002, 0.05),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
@@ -315,7 +347,7 @@ ServerQuit.removeAll;
 
 	e.add(\oneshot2 -> {
 		"playing one shot 2".postln;
-		15.do{
+		9.do{
 			Synth(
 				\resonator,
 				[
@@ -323,12 +355,12 @@ ServerQuit.removeAll;
 					\sus, 0,
 					\rel, rrand(3.0, 4.0),
 					\rate, rrand(-1.0, 1.0),
-					\freq, rrand(125, 2500).round(125),
+					\freq, exprand(125, 2500).round(62.5),
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
 					\spos, rrand(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-					\decay, rrand(0.5, 1.2),
-					\pan, rrand(-5.0, 0.5),
-					\mix, exprand(0.2, 1.0),
+					\decay, rrand(0.7, 0.9),
+					\pan, rrand(-1.0, 1.0),
+					\mix, rrand(0.2, 0.8),
 					\amp, exprand(0.001, 0.002),
 					\out, ~bus[\reverb]
 				],
@@ -363,7 +395,7 @@ ServerQuit.removeAll;
 
 	e.add(\oneshot4 -> {
 		"playing one shot 4".postln;
-		10.do{
+		6.do{
 			Pbind(
 				\instrument, \swells,
 				\dur, Pwhite(0.1, 1.0, inf),
@@ -376,6 +408,27 @@ ServerQuit.removeAll;
 				\freq, Pexprand(300, 1500, inf).round(150),
 				\pan, Pwhite(-1.0, 1.0),
 				\amp, Pkey(\freq, inf).linlin(150, 1500, 0.5, 0.1),
+				\out, ~bus[\reverb],
+				\group, ~mainGrp,
+			).play;
+		}
+	});
+
+	e.add(\oneshot5 -> {
+		"playing one shot 5".postln;
+		5.do{
+			Pbind(
+				\instrument, \swells,
+				\dur, Pwhite(0.3, 0.9),
+				\atk, Pwhite(0.0, 0.01, inf),
+				\sus, 0.0,
+				\rel, Pwhite(0.001, 0.005, inf),
+				\modamt, Pwhite(0.5, 0.9),
+				\carpartial, Pwhite(-7.3, 2.1, 5),
+				\modpartial, Pwhite(-6.2, 1.3, 5),
+				\freq, Pexprand(800, 2400).round(200),
+				\pan, Pwhite(-1.0, 1.0),
+				\amp, Pkey(\freq, inf).linlin(800, 2400, 0.6, 0.1),
 				\out, ~bus[\reverb],
 				\group, ~mainGrp,
 			).play;
@@ -498,10 +551,12 @@ s.waitForBoot({
 		// 0.0 is the raw sample input
 		// 1.0 is input from the Dust ugen, which creates random impulses
 		// clicks like this run through the resonator make nice pitched percussion sounds
-		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(6, 0.2), mix*2-1), freq, decay, amp);
+		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(6, 0.1), mix*2-1), freq, decay, amp);
 
 		// multiply the signal by the envelope and amp
 		sig = sig * env * amp;
+
+		sig = Pan2.ar(sig, pan, amp);
 
 		Out.ar(out, sig);
 	}).add;
@@ -538,6 +593,8 @@ s.waitForBoot({
 		Out.ar(out, sig);
 	}).add;
 
+	// this SynthDef is inspired by Daniel Nouri's FM synthesis tutorial, available at:
+	// http://danielnouri.org/docs/SuperColliderHelp/Tutorials/Mark_Polishook_tutorial/Synthesis/14_Frequency_modulation.html
 	SynthDef(\swells, {
 		| carpartial = 1, modpartial = 1, index = 3, mul = 0.05, modamt = 0.5, bpffreq = 200, rq = 0.5,
 		atk = 2, sus = 0, rel = 3, freq, amp = 1, pan = 0, out |
