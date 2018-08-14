@@ -175,15 +175,25 @@ ServerQuit.removeAll;
 
 			~waves = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pexprand(0.1, 1.5),
+				\dur, Pexprand(0.1, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
-				\buf, Prand(b[\Social][0..b[\Social].size], inf),
-				\rate, Pwhite(0.9, 1.1),
+			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, select Social/Industry 90% of the time, Nature 10%
+				    [
+					Prand(b[\Social][0..b[\Social].size]),
+					Prand(b[\Industry][0..b[\Industry].size]),
+					Prand(b[\Nature][0..b[\Nature].size])
+			        ],
+				    [
+					    0.45, // 45% of the time select from the \Social samples
+					    0.45, // 45% of the time select from the \Industry samples
+					    0.1 // 10% of the time select from the \Nature samples
+			        ], inf),
+				\rate, Pxrand([-0.8, -0.9, -1.0, -1.1, -1.2, 0.8, 0.9, 1.0, 1.1, 1.2], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 				\amp, Pexprand(0.7, 1),
 				\pan, Pwhite(-1.0, 1.0, inf),
-				\rq, Pwhite(0.002, 0.008),
+				\rq, Pwhite(0.002, 0.08),
 				\freq, Prand((Scale.phrygian.degrees+66).midicps,inf) * Pxrand([1, 2], inf),
 				\bpfmix, Pwhite(0.4, 1.0),
 				\group, ~mainGrp,
@@ -230,7 +240,7 @@ ServerQuit.removeAll;
 		        \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 			    \mix, Pwhite(0.3, 1.0),
 				\decay, Pkey(\mix * 1.5),
-				\amp, Pexprand(0.1, 0.5),
+				\amp, Pexprand(0.001, 0.003),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
@@ -245,7 +255,7 @@ ServerQuit.removeAll;
 			~marimba = Pbind(
 				\instrument, \bpfsaw,
 				\dur, Pwhite(0.2, 0.5),
-				\freq, Prand([1/5, 1/3, 2/5], inf),
+			    \freq, Prand([1/8, 1/5, 1/3, 2/5, 3/5], inf),
 				\rqmin, Pwhite(0.00015, 0.002),
 				\rqmax, Pkey(\rqmin),
 			    \cfmin, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
@@ -253,7 +263,7 @@ ServerQuit.removeAll;
 				\atk, 3,
 				\sus, 1,
 				\rel, 5,
-				\amp, Pwhite(0.5, 1.5, inf),
+				\amp, Pexprand(0.5, 1.5, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
@@ -267,7 +277,7 @@ ServerQuit.removeAll;
 				\rate, Pwhite(-0.08,0.08).midiratio,
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 			    \pan, Pwhite(-1.0, 1.0),
-				\amp, Pexprand(0.6, 1.0),
+				\amp, Pexprand(0.6, 1.5),
 				\bpfmix, Pwhite(0.7, 0.9),
 			    \freq, Prand((Scale.phrygian.degrees+72).midicps,inf) * Pxrand([1, 1.5, 2], inf),
 			    \rq, Pwhite(0.002, 0.05),
@@ -313,10 +323,10 @@ ServerQuit.removeAll;
 					\sus, 0,
 					\rel, rrand(3.0, 4.0),
 					\rate, rrand(-1.0, 1.0),
-					\freq, rrand(250, 2500).round(50),
+					\freq, rrand(125, 2500).round(125),
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
 					\spos, rrand(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-					\decay, rrand(0.1, 0.5),
+					\decay, rrand(0.5, 1.2),
 					\pan, rrand(-5.0, 0.5),
 					\mix, exprand(0.2, 1.0),
 					\amp, exprand(0.001, 0.002),
@@ -351,6 +361,27 @@ ServerQuit.removeAll;
 		};
 	});
 
+	e.add(\oneshot4 -> {
+		"playing one shot 4".postln;
+		10.do{
+			Pbind(
+				\instrument, \swells,
+				\dur, Pwhite(0.1, 1.0, inf),
+				\atk, Pwhite(0.01, 0.07, inf),
+				\sus, 0.0,
+				\rel, Pwhite(0.001, 0.05),
+				\modamt, Pwhite(0.1, 1.0),
+				\carpartial, Pxrand([0.5, 0.75, 1, 1.125, 1.25, 1.5], 10),
+				\modpartial, Pwhite(-6, 1, inf).round(1),
+				\freq, Pexprand(300, 1500, inf).round(150),
+				\pan, Pwhite(-1.0, 1.0),
+				\amp, Pkey(\freq, inf).linlin(150, 1500, 0.5, 0.1),
+				\out, ~bus[\reverb],
+				\group, ~mainGrp,
+			).play;
+		}
+	});
+
 	// declare our OSCdef for receiving the tide level from the python script (on the other raspberry pi, controlling the visualisation)
 	// via osc, and map it to a more legible/usable range – 0 to 100
 	// 0 - 25 = low tide
@@ -366,7 +397,7 @@ ServerQuit.removeAll;
 		~tideLevel.postln;
 
 		// choose a random oneshot event to play
-		[e[\oneshot1], e[\oneshot2], e[\oneshot3]].choose.value;
+		[e[\oneshot1], e[\oneshot2], e[\oneshot3], e[\oneshot4]].choose.value;
 
 		// case statements telling the program which event to run, depending on what the ~tideLevel value is
 		case
@@ -507,28 +538,9 @@ s.waitForBoot({
 		Out.ar(out, sig);
 	}).add;
 
-	/*~bass = 3.do{Pbind(
-		\instrument, \swells,
-		\dur, Pwhite(1.0, 3.0, inf),
-		\atk, Pwhite(3.0, 6.0),
-		\sus, Pwhite(0.0, 2.0),
-		\rel, Pwhite(4.0, 7.0),
-		\modamt, Pwhite(0.1, 0.4),
-		\carpartial, Pxrand([0.5, 1, 1.5, 2.0], inf),
-		\modpartial, Pwhite(-6, 4, inf).round(2),
-		\freq, Prand((Scale.phrygian.degrees+48).midicps, inf) * Pxrand([0.5, 1], inf),
-		\bpffreq, 300,
-		\rq, Pexprand(0.001, 0.002, inf),
-		\pan, Pwhite(-1.0, 1.0),
-		\amp, 1.0,
-		\out, ~bus[\reverb],
-		\group, ~mainGrp,
-	).play;
-	}*/
-
 	SynthDef(\swells, {
 		| carpartial = 1, modpartial = 1, index = 3, mul = 0.05, modamt = 0.5, bpffreq = 200, rq = 0.5,
-		atk = 2, sus = 0, rel = 3, freq, amp, pan = 0, out |
+		atk = 2, sus = 0, rel = 3, freq, amp = 1, pan = 0, out |
 		var mod, car;
 		var sig, env;
 
@@ -537,7 +549,7 @@ s.waitForBoot({
 		car = SinOsc.ar((freq * carpartial) + mod, 0, amp)!2;
 		sig = car + mod;
 		sig = sig * env * amp;
-		sig = BPF.ar(sig, bpffreq, rq, amp);
+		// sig = BPF.ar(sig, bpffreq, rq, amp);
 		sig = Pan2.ar(sig, pan, amp);
 
 		Out.ar(out, sig);
