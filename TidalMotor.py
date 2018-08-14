@@ -31,11 +31,11 @@ mh = Adafruit_MotorHAT()
 
 # declare stepper motor to move plate
 myStepper = mh.getStepper(200, 1)  # 200 steps/rev, motor port #1
-myStepper.setSpeed(120)             # RPM
+myStepper.setSpeed(300)             # RPM
 
 # declare peristaltic pump DC motor
 myMotor = mh.getMotor(3)           # it is connected to port 3 on the Adafruit MotorHAT
-myMotor.setSpeed(150)              # speed is set 0-255
+myMotor.setSpeed(155)              # speed is set 0-255
 
 # mapping function found on rpi forums:
 # www.raspberrypi.org/forums/viewtopic.php?t=149371
@@ -50,22 +50,29 @@ def newReading():
     level = json_data['items'][0]['latestReading']['value']
     print("level = ")
     print(level)
-    mappedLevel = round(mapper(level, -2.67, 3.65, 0, 100))
+    mappedLevel = round(mapper(level, -2.96, 4.21, 0, 100))
     print("mappedLevel =")
     print(mappedLevel)
     msg = osc_message_builder.OscMessageBuilder(address = '/pySend')
     msg.add_arg(level, arg_type='f')
     msg = msg.build()
     client.send(msg)
-    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.SINGLE)
+    mappedSteps = round(mapper(mappedLevel, 0, 100, 50, 4715))
+    print("stepping ")
+    print(mappedSteps)
+    print("of a possible 4715 steps")
+    myStepper.step(mappedSteps, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
+    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
+    mappedFlow = round(mapper(mappedLevel, 0, 100, 100, 255))
+    print("mappedFlow = ")
+    print(mappedFlow)
+    myMotor.setSpeed(mappedFlow)
     myMotor.run(Adafruit_MotorHAT.FORWARD)
-    for i in range(round(mapper(mappedLevel, 0, 100, 20, 255))):
-        myMotor.setSpeed(i)
     time.sleep(10)
     mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-    time.sleep(1.0)
-    myStepper.step(mappedLevel * 30, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.SINGLE)
-    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+    time.sleep(3)
+    myStepper.step(mappedSteps, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
     turnOffMotors()
 
 
@@ -82,11 +89,11 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', seconds = 45, next_run_time = datetime.datetime.now())
+    Scheduler.add_job(newReading, 'interval', minutes = 3, next_run_time = datetime.datetime.now())
     Scheduler.start()
     try:
         while( True ):
-            time.sleep(10)
+            time.sleep(1)
     except ( KeyboardInterrupt ):
             turnOffMotors()
             exit()

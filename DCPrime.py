@@ -28,15 +28,12 @@ atexit.register(turnOffMotors)
 # the motor is connected to port 3
 myMotor = mh.getMotor(3)
 
-# speed range is 0 to 255
-myMotor.setSpeed(150)
-
 # run this until keyboard interrupt and then turn off all the motor ports
 if __name__ == '__main__':
     try:
         while( True ):
+            myMotor.setSpeed(255)
             myMotor.run(Adafruit_MotorHAT.FORWARD)
-            time.sleep(5)
     except ( KeyboardInterrupt ):
         turnOffMotors()
         exit()
