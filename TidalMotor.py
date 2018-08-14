@@ -43,38 +43,31 @@ myMotor.setSpeed(155)              # speed is set 0-255
 def mapper(x, in_min, in_max, out_min, out_max):
     return ((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
-
 def newReading():
-    url = "https://environment.data.gov.uk/flood-monitoring/id/stations/0003/measures"
+    url = "https://environment.data.gov.uk/flood-monitoring/id/stations/0007/measures"
     json_data = requests.get(url).json()
     level = json_data['items'][0]['latestReading']['value']
-    print("level = ")
-    print(level)
-    mappedLevel = round(mapper(level, -2.96, 4.21, 0, 100))
-    print("mappedLevel =")
-    print(mappedLevel)
+    print("level = ", level)
+    mappedLevel = round(mapper(level, -1.80, 4.30, 0, 100))
+   #mappedLevel  = round(mapper(level, -2.96, 4.21, 0, 100))
+    print("mappedLevel =", mappedLevel)
     msg = osc_message_builder.OscMessageBuilder(address = '/pySend')
     msg.add_arg(level, arg_type='f')
     msg = msg.build()
     client.send(msg)
     mappedSteps = round(mapper(mappedLevel, 0, 100, 50, 4715))
-    print("stepping ")
-    print(mappedSteps)
-    print("of a possible 4715 steps")
+    print("stepping ", mappedSteps, "of a possible 4715 steps")
     myStepper.step(mappedSteps, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
     mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
     mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
     mappedFlow = round(mapper(mappedLevel, 0, 100, 100, 255))
-    print("mappedFlow = ")
-    print(mappedFlow)
+    print("mappedFlow = ", mappedFlow)
     myMotor.setSpeed(mappedFlow)
     myMotor.run(Adafruit_MotorHAT.FORWARD)
     time.sleep(10)
     mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-    time.sleep(3)
     myStepper.step(mappedSteps, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
     turnOffMotors()
-
 
 # recommended for auto-disabling motors on shutdown!
 def turnOffMotors():
@@ -89,8 +82,8 @@ atexit.register(turnOffMotors)
 if __name__ == '__main__':
     # add scheduler job to run newReading() function at intervals to retrieve new values
     # values on the json are updated every fifteen minutes
-    Scheduler.add_job(newReading, 'interval', minutes = 3, next_run_time = datetime.datetime.now())
     Scheduler.start()
+    Scheduler.add_job(newReading, 'interval', minutes = 3, next_run_time = datetime.datetime.now())
     try:
         while( True ):
             time.sleep(1)

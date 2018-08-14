@@ -32,7 +32,7 @@ myMotor = mh.getMotor(3)
 if __name__ == '__main__':
     try:
         while( True ):
-            myMotor.setSpeed(255)
+            myMotor.setSpeed(200)
             myMotor.run(Adafruit_MotorHAT.FORWARD)
     except ( KeyboardInterrupt ):
         turnOffMotors()
