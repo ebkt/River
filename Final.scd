@@ -345,16 +345,16 @@ ServerQuit.removeAll;
 		"high tide playing".postln;
 			~marimba = Pbind(
 				\instrument, \bpfsaw,
-				\dur, Pwhite(0.2, 0.5),
+				\dur, Pwhite(0.2, 2.0, inf),
 			    \freq, Prand([1/8, 1/5, 1/3, 2/5, 3/5], inf),
-				\rqmin, Pwhite(0.00015, 0.002),
+				\rqmin, Pwhite(0.015, 0.02),
 				\rqmax, Pkey(\rqmin),
 			    \cfmin, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
 				\cfmax, Pkey(\cfmin),
 				\atk, 3,
 				\sus, 1,
 				\rel, 5,
-				\amp, Pexprand(1.0, 2.0, inf),
+				\amp, Pexprand(0.1, 0.4, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
@@ -370,7 +370,7 @@ ServerQuit.removeAll;
 				                    Prand(b[\Social][0..b[\Social].size]),
 				                    Prand(b[\Industry][0..b[\Industry].size]),
 			                    ],
-			                    [ 0.9, 0.05, 0.05 ], inf)
+			                    [ 0.9, 0.05, 0.05 ], inf),
 				\rate, Pwhite(-0.05,0.05).midiratio,
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 			    \pan, Pwhite(-1.0, 1.0),
@@ -509,7 +509,7 @@ ServerQuit.removeAll;
 
 	OSCdef.new(\tideLevel, { // the OSCdef key is \tideLevel
 		| msg | // although we receive a lot more information, this is the only bit we care about
-		~tideLevel = msg[1].linlin(-2.79, 3.65, 0, 100).round; // assign the global ~tideLevel variable to the amount received from the python script
+		~tideLevel = msg[1].linlin(-2.79, 4.21, 0, 100).round; // assign the global ~tideLevel variable to the amount received from the python script
 
 		// after mapping it to a more usable range (0-100), print it out
 		~tideLevel.postln;
