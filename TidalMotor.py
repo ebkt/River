@@ -44,12 +44,12 @@ def mapper(x, in_min, in_max, out_min, out_max):
     return ((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
 def newReading():
-    url = "https://environment.data.gov.uk/flood-monitoring/id/stations/0007/measures"
+    url = "https://environment.data.gov.uk/flood-monitoring/id/stations/0003/measures"
     json_data = requests.get(url).json()
     level = json_data['items'][0]['latestReading']['value']
     print("level = ", level)
-    mappedLevel = round(mapper(level, -1.80, 4.30, 0, 100))
-   #mappedLevel  = round(mapper(level, -2.96, 4.21, 0, 100))
+    #mappedLevel = round(mapper(level, -1.80, 4.30, 0, 100))
+    mappedLevel  = round(mapper(level, -2.96, 4.21, 0, 100))
     print("mappedLevel =", mappedLevel)
     msg = osc_message_builder.OscMessageBuilder(address = '/pySend')
     msg.add_arg(level, arg_type='f')
