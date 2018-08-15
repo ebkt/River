@@ -132,9 +132,10 @@ ServerQuit.removeAll;
 		// so the new samples will have faded in by then, giving a smooth, unnoticeable crossfade
 		~highTideWaves.stop;
 		~marimba.stop;
+		~midLowMix.stop;
+		~midLowPerc.stop;
 		~midHighIndustry.stop;
 		~simpleRings.stop;
-		~waves.stop;
 		~people.stop;
 		~percussive.stop;
 		"low tide playing".postln;  // post what event is playing to the console
@@ -155,7 +156,7 @@ ServerQuit.removeAll;
 			    \dur, Pexprand(0.1, 4.5),
 
 			    // the duration of the attack stage of the envelope applied to the amplitude
-				\atk, Pexprand(0.8, 4),
+				\atk, Pexprand(1.5, 4),
 
 			    // the duration of the release stage of the envelope applied to the amplitude
 				\rel, Pexprand(5, 7),
@@ -170,7 +171,7 @@ ServerQuit.removeAll;
 					inf),
 
 			    // each step, the sample should be played back at a random rate selected from this list
-				\rate, Pxrand([-1.0, -0.8, 0.8, 0.9, 0.95, 1.0, 1.1], inf),
+				\rate, Pxrand([-1.0, -0.8, 0.8, 0.9, 0.95, 1.0], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
@@ -220,12 +221,15 @@ ServerQuit.removeAll;
 
 		// stop any other events which are currently playing
 		~people.stop;
+		~percussive.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
 		~midHighMix.stop;
 		~simpleRings.stop;
 		~midLowMix.stop;
 		~midLowPerc.stop;
+
+		b[\Social][1].value;
 
 		"midlow tide playing".postln;
 
@@ -234,7 +238,7 @@ ServerQuit.removeAll;
 				\dur, Pexprand(0.1, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
-			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, select Social/Industry 90% of the time, Nature 10%
+			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, here selecting Social/Industry 90% of the time, Nature 10%
 				    [
 					Prand(b[\Social][0..b[\Social].size]),
 					Prand(b[\Industry][0..b[\Industry].size]),
@@ -277,6 +281,7 @@ ServerQuit.removeAll;
 
 	e.add(\midHigh -> {
 		~people.stop;
+		~percussive.stop;
 		~midLowMix.stop;
 		~midLowPerc.stop;
 		~midHighMix.stop;
@@ -290,16 +295,12 @@ ServerQuit.removeAll;
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
 		        \buf, Pwrand(
-				    [
-					Prand(b[\Social][0..b[\Social].size]),
-					Prand(b[\Industry][0..b[\Industry].size]),
-					Prand(b[\Nature][0..b[\Nature].size])
-			        ],
-				    [
-					    0.35,
-					    0.35,
-					    0.30
-			        ], inf),
+				                [
+					                Prand(b[\Social][0..b[\Social].size]),
+					                Prand(b[\Industry][0..b[\Industry].size]),
+					                Prand(b[\Nature][0..b[\Nature].size])
+			                    ],
+				                [ 0.35, 0.35, 0.30 ], inf),
 				\rate, Pwhite(-1.0,1.0),
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 				\amp, Pexprand(0.5, 1.0, inf),
@@ -334,7 +335,9 @@ ServerQuit.removeAll;
 
 	e.add(\highTide -> {
 		~people.stop;
+		~percussive.stop;
 		~midLowMix.stop;
+		~midLowPerc.stop;
 		~midHighMix.stop;
 		~simpleRings.stop;
 		~marimba.stop;
@@ -361,7 +364,13 @@ ServerQuit.removeAll;
 			    \dur, Pseq([4, 1.5, 2.2, 3.1], inf),
 				\atk, Pwhite(5.0, 8.0),
 				\rel, Pwhite(4.0, 10.0),
-			    \buf, Pxrand(b[\Nature][0..b[\Nature].size], inf),
+			    \buf, Pwrand(
+				                [
+				                    Prand(b[\Nature][0..b[\Nature].size]),
+				                    Prand(b[\Social][0..b[\Social].size]),
+				                    Prand(b[\Industry][0..b[\Industry].size]),
+			                    ],
+			                    [ 0.9, 0.05, 0.05 ], inf)
 				\rate, Pwhite(-0.05,0.05).midiratio,
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 			    \pan, Pwhite(-1.0, 1.0),
