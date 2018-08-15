@@ -1,13 +1,36 @@
-// the overall layout of this code and its structure involving 'setup'/'cleanup'/'main loop'-esque functions
+// the layout of this code and its structure involving 'setup'/'cleanup'/'event'-esque functions
 // is inspired by Eli Fieldsteel's youtube tutorials
 // the tutorials are available at:
 // https://www.youtube.com/watch?v=yRzsOOiJ_p4&list=PLPYzvS8A_rTaNDweXe6PX4CXSGq4iEWYC
 
-(
+// the overall structure of the piece involves different "events" being run for four tide levels: low, mid-low, mid-high, and high tide
+// these events allow different collections of field recordings to be accessed and played back according to data received over osc
+
+  ////////////////////////////////
+ // GENERAL LAYOUT EXPLANATION //
+////////////////////////////////
+// the server is configured at the top of the program, and then a path to the sample folder is made
+// before the samples are actually loaded in (~makeBuffers), gloabl variables are declared
+// busses are created to allow audio to be routed to a reverb send effect, which is also given its own group
+// following this, events are declared for each of the tide levels, as well as "oneshot" events
+// oneshot events are small sequences or sounds which are randomly selected and played each time supercollider receives an osc message
+// this is intended to be an audible signal that the motorised components of the work are about to move/already moving
+// an OscDef is used to receive osc messages and map the value received to a usable range, before using case statements
+// to decide which tide level event should be triggered
+// underneath this, functions are added to the ServerBoot and ServerQuit evaluation list, so they are run each time
+// the server boots or quits
+// finally, SynthDefs are used to provide reusable recipes for creating sound
+// the bpfsaw, bpfbuf and reverb SynthDefs are inspired by Eli Fieldsteel's tutorials, linked above
+// the swells fm SynthDef is inspired by Daniel Nouri's tutorials, linked below
+// below the SynthDefs, other functions are added to the ServerTree evaluation list
+// once the server has successfully booted, with all SynthDefs evaluated and samples loaded,
+// 'done' will be printed in the console. The work will run indefinitely once it receives an osc message.
+
   ///////////////////////////////
  //     CONFIGURATION         //
 ///////////////////////////////
 // declare the server and configure outputs, inputs, sample rate, memory allocation, etc
+(
 s = Server.local;
 s.options.outDevice_(
 	"Built-in Output"
@@ -32,7 +55,8 @@ ServerQuit.removeAll;
 
 // define functions to create buffers and busses
 // this makes a dictionary to store each of the folders contained within the "Samples/" folder
-// this way, adding/removing samples is easy, and subfolders can be referred to by name – easier than memorising numbers
+// this way, adding/removing samples doesn't change the code
+// and subfolders can be referred to by name – easier than memorising numbers
 ~makeBuffers = {
 	b = Dictionary.new;
 	PathName(~path).entries.do{
@@ -50,7 +74,7 @@ ServerQuit.removeAll;
 	};
 };
 
-// create a reverb bus as a send effect – here we're creating a dictionary of buses
+// create a reverb bus as a send effect – here we're creating a dictionary of busses
 // that way we can also refer to our output buses by name, not numbers
 // e.g. signals we want to go to the reverb get sent to \reverb
 
@@ -69,8 +93,7 @@ ServerQuit.removeAll;
 };
 
 // create our nodes/groups
-// this is necessary for audio to be sent to the reverb bus without running into errors
-
+// this is necessary for audio to be sent to the reverb bus without running into issues
 ~makeNodes = {
 	s.bind({
 		~mainGrp = Group.new;
@@ -82,7 +105,7 @@ ServerQuit.removeAll;
 				\predelay, 0.2,
 				\revtime, 2.3,
 				\lpf, 4500,
-				\mix, 0.8,
+				\mix, 0.6,
 				\in, ~bus[\reverb],
 				\out, ~out,
 			],
@@ -92,62 +115,76 @@ ServerQuit.removeAll;
 };
 
 // create a dictionary of events so that supercollider knows how to respond depending on the tide level it receives
-
 ~makeEvents = {
 	e = Dictionary.new;
 
 // events 1 to 4 are controlled by the tide level
-// when the tide level moves, it changes which samples are available to be played and which instrument/SynthDef is selected,
-// allowing a lot of variety in the mood of sounds
 // at high tide, more water sounds are made audible
 // at low tide, more sounds of day to day life, people and construction are audible
-// a lot of the time buffers will be run through different types of filters which emphasise certain resonant frequencies according to how they are set
-
+// a lot of the time buffers will be run through different types of filters which emphasise certain resonant frequencies
+// each event plays a more musical accompaniment alongside the samples to emphasise the idea of not just the sound of a place
+// but the music of a place, in the more traditional sense of the word
 
 	e.add(\lowTide -> { // create a new event for \lowTide – when the tide level is mapped 0-100, this is from 0 to 25
-		// first, stop all other patterns from other tide levels playing
+
+		// first, stop all other patterns playing
 		// the samples that are already playing will fade out but it'll take a few seconds,
-		// so the new samples will have faded in by then, giving a nice unnoticeable crossfade
+		// so the new samples will have faded in by then, giving a smooth, unnoticeable crossfade
 		~highTideWaves.stop;
 		~marimba.stop;
 		~midHighIndustry.stop;
 		~simpleRings.stop;
 		~waves.stop;
-		"low tide playing".postln;    // post what event is playing to the console
-		   ~people = Pbind( // create a Pbind, which is like a "pattern", where inf is the number of steps in the pattern.
-			                // The Pbind will stop at the smallest number of steps provided,
-			                // so passing inf (which is the default) to all means the pattern will run indefinitely
+		~people.stop;
+		~percussive.stop;
+		"low tide playing".postln;  // post what event is playing to the console
+		   ~people = Pbind(         // create a Pbind, which is like a "pattern", where inf is the number of steps in the pattern.
+			                        // The Pbind will stop at the smallest number of steps provided,
+			                        // so passing inf (which is the default) to all means the pattern will run indefinitely
+			                        // arguments from the SynthDef in use can be modified here
+			                        // the Pbind expects pairs of symbols and values, separated by commas
+                                    // P... streams allow different types of numbers to be added to each of the args at each step of the pattern
+			                        // eg. Pexprand (random numbers w/ exponential distribution)
+		                            // eg. Pseq, a sequence of values, with the next selected each step. Can be nested too.
+			                        // eg. Pxrand, choose randomly from a list, but never the same element twice in a row
+
 			    // the instrument used for this pattern is \bpfbuf – a SynthDef which runs buffers through resonant bandpass filters
 				\instrument, \bpfbuf,
 
-                // the duration of the "clock" for triggering the next step in the pattern: random between 0.1 and 1.5 seconds
-			    \dur, Pexprand(0.1, 1.5),
+                // the duration of the "clock" for triggering the next step in the pattern
+			    \dur, Pexprand(0.1, 4.5),
 
-			    // the duration of the attack stage of the envelope applied to the amplitude: random between 0.8 and 4 seconds
+			    // the duration of the attack stage of the envelope applied to the amplitude
 				\atk, Pexprand(0.8, 4),
 
 			    // the duration of the release stage of the envelope applied to the amplitude
 				\rel, Pexprand(5, 7),
 
 			    // nested sequence – select five samples from the \Industry folder, then five from the \Social folder, repeat indefinitely
-			   \buf, Pseq([Prand(b[\Industry][0..b[\Industry].size], 5), Prand(b[\Social][0..b[\Social].size], 5)], inf),
+			   \buf, Pseq(
+				        [
+					        Prand(b[\Industry][0..b[\Industry].size], 5),
+					        Prand(b[\Social][0..b[\Social].size], 7),
+				            Prand(b[\Nature][0..b[\Nature].size], 1),
+				        ],
+					inf),
 
-			    // each step, the selected sample should be played back at a random rate between 0.9 and 1.1
-				\rate, Pwhite(0.9, 1.1),
+			    // each step, the sample should be played back at a random rate selected from this list
+				\rate, Pxrand([-1.0, -0.8, 0.8, 0.9, 0.95, 1.0, 1.1], inf),
 
-			    // random sample startpos between 0 and the end of the sample minus the length of the current step in the Pbind
+			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 
 			    // random amplitude between these numbers
-				\amp, Pexprand(0.2, 0.6),
+				\amp, Pexprand(0.5, 1.0),
 
 			    // random panning – -1.0 is hard left, 1.0 is hard right
 				\pan, Pwhite(-1.0, 1.0),
 
-			    // random resonance on the filter – lower numbers result in higher resonance, creating clear pitches
+			    // random resonance on the filter – lower numbers result in higher resonance, creating clearer pitches
 				\rq, Pwhite(0.001, 0.008),
 
-			    // randomly select filter frequencies in the phrygian mode, and randomly select normal pitch or up/down an octave
+			    // randomly select filter frequencies in the phrygian mode, and pitch or up/down an octave
 				\freq, Prand((Scale.phrygian.degrees+63).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 
 			    // random mix values – 0.0 is raw samples, 1.0 is full bandpass filter mix
@@ -159,7 +196,24 @@ ServerQuit.removeAll;
 			    // the output bus is the reverb send
 				\out, ~bus[\reverb],
 		    ).play; // play this when the criteria for this event are filled by the tidal information sent in, ie. it's low tide
-		});
+
+		// a more musical accompaniment to the field recordings above. Four instances of the Pbind are created and run simultaneously.
+		~percussive = 4.do{
+			    Pbind(
+			        \instrument, \swells,
+			        \dur, Pexprand(0.1, 30, inf),
+			        \atk, Pexprand(0.0, 0.3, inf),
+			        \rel, Pwhite(0.08, 0.35, inf),
+			        \freq, Prand((Scale.phrygian.degrees+75).midicps,inf) * Pxrand([0.25, 0.5, 1], inf),
+			        \modpartial, Pxrand([-1, -0.5, 0.5, 1], inf),
+			        \carpartial, Pxrand([-2, -1, -0.5, 0.5, 1], inf),
+			        \index, Pwhite(0.0, 0.5, inf),
+	                \amp, Pexprand(0.1, 0.2),
+			        \group, ~mainGrp,
+			        \out, ~bus[\reverb],
+		        ).play;
+		}
+	});
 
 	// similar to above, an event to be called at mid-low tide – 25 to 50 when the tide level is mapped from 0 to 100
 	e.add(\midLow -> {
@@ -168,45 +222,87 @@ ServerQuit.removeAll;
 		~people.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
-		~midHighIndustry.stop;
+		~midHighMix.stop;
 		~simpleRings.stop;
+		~midLowMix.stop;
+		~midLowPerc.stop;
 
 		"midlow tide playing".postln;
 
-			~waves = Pbind(
+			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pexprand(0.1, 1.5),
+				\dur, Pexprand(0.1, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
-				\buf, Prand(b[\Social][0..b[\Social].size], inf),
-				\rate, Pwhite(0.9, 1.1),
+			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, select Social/Industry 90% of the time, Nature 10%
+				    [
+					Prand(b[\Social][0..b[\Social].size]),
+					Prand(b[\Industry][0..b[\Industry].size]),
+					Prand(b[\Nature][0..b[\Nature].size])
+			        ],
+				    [
+					    0.45,          // 45% of the time select from the \Social samples
+					    0.45,         // 45% of the time select from the \Industry samples
+					    0.1          // 10% of the time select from the \Nature samples
+			        ], inf),
+				\rate, Pxrand([-0.8, -0.9, -1.0, -1.1, -1.2, 0.8, 0.9, 1.0, 1.1, 1.2], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-				\amp, Pexprand(0.7, 1),
+				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
-				\rq, Pwhite(0.002, 0.008),
+				\rq, Pwhite(0.002, 0.08),
 				\freq, Prand((Scale.phrygian.degrees+66).midicps,inf) * Pxrand([1, 2], inf),
 				\bpfmix, Pwhite(0.4, 1.0),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
+
+		    ~midLowPerc = 5.do{Pbind(
+			    \instrument, \bpfsaw,
+			    \dur, Pwhite(3.0, 10.0, inf),
+			    \atk, Pexprand(2.0, 4.0, inf),
+			    \rel, Pexprand(1.0, 3.5, inf),
+			    \freq, Pexprand(0.75, 15.0, inf),
+			    \rqmin, Pwhite(0.01, 0.001, inf),
+			    \rqmax, Pkey(\rqmin, inf),
+			    \cfmin, Prand((Scale.phrygian.degrees+66).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
+				\cfmax, Pkey(\cfmin, inf),
+			    \pan, Pwhite(-1.0, 1.0, inf),
+				\amp, Pexprand(1.4, 2.5, inf),
+				\group, ~mainGrp,
+				\out, ~bus[\reverb],
+		).play;
+		}
 	});
 
 
 	e.add(\midHigh -> {
 		~people.stop;
-		~waves.stop;
+		~midLowMix.stop;
+		~midLowPerc.stop;
+		~midHighMix.stop;
+		~simpleRings.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
 		"mid high tide playing".postln;
-			~midHighIndustry = Pbind(
+			~midHighMix = Pbind(
 				\instrument, \bpfbuf,
 				\dur, Pexprand(1.0, 3.5),
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
-		        \buf, Prand(b[\Nature][0..b[\Nature].size]++b[\Industry][0..b[\Industry].size], inf),
+		        \buf, Pwrand(
+				    [
+					Prand(b[\Social][0..b[\Social].size]),
+					Prand(b[\Industry][0..b[\Industry].size]),
+					Prand(b[\Nature][0..b[\Nature].size])
+			        ],
+				    [
+					    0.35,
+					    0.35,
+					    0.30
+			        ], inf),
 				\rate, Pwhite(-1.0,1.0),
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-				\amp, Pexprand(0.5, 1.5, inf),
+				\amp, Pexprand(0.5, 1.0, inf),
 				\bpfmix, Pwhite(0.2, 1.0),
 				\rq, Pwhite(0.002, 0.02),
 			    \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([1, 2, 3], inf),
@@ -230,7 +326,7 @@ ServerQuit.removeAll;
 		        \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 			    \mix, Pwhite(0.3, 1.0),
 				\decay, Pkey(\mix * 1.5),
-				\amp, Pexprand(0.1, 0.5),
+				\amp, Pexprand(0.001, 0.003),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
@@ -238,14 +334,16 @@ ServerQuit.removeAll;
 
 	e.add(\highTide -> {
 		~people.stop;
-		~waves.stop;
-		~midHighIndustry.stop;
+		~midLowMix.stop;
+		~midHighMix.stop;
 		~simpleRings.stop;
+		~marimba.stop;
+		~highTideWaves.stop;
 		"high tide playing".postln;
 			~marimba = Pbind(
 				\instrument, \bpfsaw,
 				\dur, Pwhite(0.2, 0.5),
-				\freq, Prand([1/5, 1/3, 2/5], inf),
+			    \freq, Prand([1/8, 1/5, 1/3, 2/5, 3/5], inf),
 				\rqmin, Pwhite(0.00015, 0.002),
 				\rqmax, Pkey(\rqmin),
 			    \cfmin, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
@@ -253,23 +351,23 @@ ServerQuit.removeAll;
 				\atk, 3,
 				\sus, 1,
 				\rel, 5,
-				\amp, Pwhite(0.5, 1.5, inf),
+				\amp, Pexprand(1.0, 2.0, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
 
 		   ~highTideWaves = Pbind(
 				\instrument, \bpfbuf,
-			    \dur, Pseq([1, 0.5, 1.2, 2.1], inf),
-				\atk, Pwhite(2.0, 8.0),
+			    \dur, Pseq([4, 1.5, 2.2, 3.1], inf),
+				\atk, Pwhite(5.0, 8.0),
 				\rel, Pwhite(4.0, 10.0),
 			    \buf, Pxrand(b[\Nature][0..b[\Nature].size], inf),
-				\rate, Pwhite(-0.08,0.08).midiratio,
+				\rate, Pwhite(-0.05,0.05).midiratio,
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 			    \pan, Pwhite(-1.0, 1.0),
-				\amp, Pexprand(0.6, 1.0),
-				\bpfmix, Pwhite(0.7, 0.9),
-			    \freq, Prand((Scale.phrygian.degrees+72).midicps,inf) * Pxrand([1, 1.5, 2], inf),
+				\amp, Pexprand(0.6, 1.5),
+				\bpfmix, Pwhite(0.7, 1.0),
+			    \freq, Prand((Scale.phrygian.degrees+72).midicps,inf) * Pxrand([0.5, 1, 1.5], inf),
 			    \rq, Pwhite(0.002, 0.05),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
@@ -305,7 +403,7 @@ ServerQuit.removeAll;
 
 	e.add(\oneshot2 -> {
 		"playing one shot 2".postln;
-		15.do{
+		9.do{
 			Synth(
 				\resonator,
 				[
@@ -313,12 +411,12 @@ ServerQuit.removeAll;
 					\sus, 0,
 					\rel, rrand(3.0, 4.0),
 					\rate, rrand(-1.0, 1.0),
-					\freq, rrand(250, 2500).round(50),
+					\freq, exprand(125, 2500).round(62.5),
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
 					\spos, rrand(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-					\decay, rrand(0.1, 0.5),
-					\pan, rrand(-5.0, 0.5),
-					\mix, exprand(0.2, 1.0),
+					\decay, rrand(0.7, 0.9),
+					\pan, rrand(-1.0, 1.0),
+					\mix, rrand(0.2, 0.8),
 					\amp, exprand(0.001, 0.002),
 					\out, ~bus[\reverb]
 				],
@@ -351,6 +449,48 @@ ServerQuit.removeAll;
 		};
 	});
 
+	e.add(\oneshot4 -> {
+		"playing one shot 4".postln;
+		6.do{
+			Pbind(
+				\instrument, \swells,
+				\dur, Pwhite(0.1, 1.0, inf),
+				\atk, Pwhite(0.01, 0.07, inf),
+				\sus, 0.0,
+				\rel, Pwhite(0.001, 0.05),
+				\modamt, Pwhite(0.1, 1.0),
+				\carpartial, Pxrand([0.5, 0.75, 1, 1.125, 1.25, 1.5], 10),
+				\modpartial, Pwhite(-6, 1, inf).round(1),
+				\freq, Pexprand(300, 1500, inf).round(150),
+				\pan, Pwhite(-1.0, 1.0),
+				\amp, Pkey(\freq, inf).linlin(150, 1500, 0.5, 0.1),
+				\out, ~bus[\reverb],
+				\group, ~mainGrp,
+			).play;
+		}
+	});
+
+	e.add(\oneshot5 -> {
+		"playing one shot 5".postln;
+		5.do{
+			Pbind(
+				\instrument, \swells,
+				\dur, Pwhite(0.3, 0.9),
+				\atk, Pwhite(0.0, 0.01, inf),
+				\sus, 0.0,
+				\rel, Pwhite(0.001, 0.005, inf),
+				\modamt, Pwhite(0.5, 0.9),
+				\carpartial, Pwhite(-7.3, 2.1, 5),
+				\modpartial, Pwhite(-6.2, 1.3, 5),
+				\freq, Pexprand(800, 2400).round(200),
+				\pan, Pwhite(-1.0, 1.0),
+				\amp, Pkey(\freq, inf).linlin(800, 2400, 0.6, 0.1),
+				\out, ~bus[\reverb],
+				\group, ~mainGrp,
+			).play;
+		}
+	});
+
 	// declare our OSCdef for receiving the tide level from the python script (on the other raspberry pi, controlling the visualisation)
 	// via osc, and map it to a more legible/usable range – 0 to 100
 	// 0 - 25 = low tide
@@ -366,7 +506,7 @@ ServerQuit.removeAll;
 		~tideLevel.postln;
 
 		// choose a random oneshot event to play
-		[e[\oneshot1], e[\oneshot2], e[\oneshot3]].choose.value;
+		[e[\oneshot1], e[\oneshot2], e[\oneshot3], e[\oneshot4]].choose.value;
 
 		// case statements telling the program which event to run, depending on what the ~tideLevel value is
 		case
@@ -467,10 +607,12 @@ s.waitForBoot({
 		// 0.0 is the raw sample input
 		// 1.0 is input from the Dust ugen, which creates random impulses
 		// clicks like this run through the resonator make nice pitched percussion sounds
-		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(6, 0.2), mix*2-1), freq, decay, amp);
+		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(6, 0.1), mix*2-1), freq, decay, amp);
 
 		// multiply the signal by the envelope and amp
 		sig = sig * env * amp;
+
+		sig = Pan2.ar(sig, pan, amp);
 
 		Out.ar(out, sig);
 	}).add;
@@ -507,28 +649,11 @@ s.waitForBoot({
 		Out.ar(out, sig);
 	}).add;
 
-	/*~bass = 3.do{Pbind(
-		\instrument, \swells,
-		\dur, Pwhite(1.0, 3.0, inf),
-		\atk, Pwhite(3.0, 6.0),
-		\sus, Pwhite(0.0, 2.0),
-		\rel, Pwhite(4.0, 7.0),
-		\modamt, Pwhite(0.1, 0.4),
-		\carpartial, Pxrand([0.5, 1, 1.5, 2.0], inf),
-		\modpartial, Pwhite(-6, 4, inf).round(2),
-		\freq, Prand((Scale.phrygian.degrees+48).midicps, inf) * Pxrand([0.5, 1], inf),
-		\bpffreq, 300,
-		\rq, Pexprand(0.001, 0.002, inf),
-		\pan, Pwhite(-1.0, 1.0),
-		\amp, 1.0,
-		\out, ~bus[\reverb],
-		\group, ~mainGrp,
-	).play;
-	}*/
-
+	// this SynthDef is inspired by Daniel Nouri's FM synthesis tutorial, available at:
+	// http://danielnouri.org/docs/SuperColliderHelp/Tutorials/Mark_Polishook_tutorial/Synthesis/14_Frequency_modulation.html
 	SynthDef(\swells, {
 		| carpartial = 1, modpartial = 1, index = 3, mul = 0.05, modamt = 0.5, bpffreq = 200, rq = 0.5,
-		atk = 2, sus = 0, rel = 3, freq, amp, pan = 0, out |
+		atk = 2, sus = 0, rel = 3, freq, amp = 1, pan = 0, out |
 		var mod, car;
 		var sig, env;
 
@@ -537,7 +662,7 @@ s.waitForBoot({
 		car = SinOsc.ar((freq * carpartial) + mod, 0, amp)!2;
 		sig = car + mod;
 		sig = sig * env * amp;
-		sig = BPF.ar(sig, bpffreq, rq, amp);
+		// sig = BPF.ar(sig, bpffreq, rq, amp);
 		sig = Pan2.ar(sig, pan, amp);
 
 		Out.ar(out, sig);
