@@ -235,7 +235,7 @@ ServerQuit.removeAll;
 
 			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pexprand(0.1, 7.0),
+				\dur, Pexprand(0.5, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
 			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, here selecting Social/Industry 90% of the time, Nature 10%
@@ -249,7 +249,7 @@ ServerQuit.removeAll;
 					    0.45,         // 45% of the time select from the \Industry samples
 					    0.1          // 10% of the time select from the \Nature samples
 			        ], inf),
-				\rate, Pxrand([-0.8, -0.9, -1.0, -1.1, -1.2, 0.8, 0.9, 1.0, 1.1, 1.2], inf),
+			    \rate, Pwrand([0.8, 0.9, 1.0, -1.0][0.32, 0.32, 0.32, 0.04], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
@@ -294,14 +294,19 @@ ServerQuit.removeAll;
 				\dur, Pexprand(1.0, 3.5),
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
-		        \buf, Pwrand(
-				                [
-					                Prand(b[\Social][0..b[\Social].size]),
-					                Prand(b[\Industry][0..b[\Industry].size]),
-					                Prand(b[\Nature][0..b[\Nature].size])
-			                    ],
-				                [ 0.35, 0.35, 0.30 ], inf),
-				\rate, Pwhite(-1.0,1.0),
+		        \buf, Pseq( // play five social samples, then 5 industry, then two nature
+				      [
+					     Prand(b[\Industry][0..b[\Industry].size], 5),
+					     Prand(b[\Nature][0..b[\Nature].size], 2)
+			          ], inf),
+				\rate, Pseq( // social samples sound a bit too alien and different speeds, because of the sound of voices
+				             // so the first step of this nested sequence is 5 samples played back at their normal rate (1)
+				             // then 5 industry and 2 nature can play anywhere from -1.0 to 1.0 speed
+			          [
+					     Pseq([1], 5),
+					     Pwhite(-1.0, 1.0, 5),
+					     Pwhite(-1.0, 1.0, 2)
+			          ], inf),
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 				\amp, Pexprand(0.5, 1.0, inf),
 				\bpfmix, Pwhite(0.2, 1.0),
@@ -317,21 +322,48 @@ ServerQuit.removeAll;
 				\atk, Pwhite(1.0, 5.0),
 				\sus, Pwhite(4.0, 6.0),
 				\rel, Pwhite(0.5, 7.0),
-			    \buf, Pseq([
-				            Prand(b[\Industry][0..b[\Industry].size], 1),
-				            Prand(b[\Social][0..b[\Social].size], 2),
-				            Prand(b[\Nature][0..b[\Nature].size], 4)
-			              ],
-			         inf),
+			    \buf, Pseq(
+				      [
+				          Prand(b[\Industry][0..b[\Industry].size], 3),
+				          Prand(b[\Nature][0..b[\Nature].size], 4)
+			          ], inf),
+			    \rate, Pseq(
+				       [
+				           Pwhite(-1.0, 1.0, 3),
+				           Pseq([1], 2),
+				           Pwhite(-1.0, 1.0, 1)
+			           ], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 		        \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 			    \mix, Pwhite(0.3, 1.0),
-				\decay, Pkey(\mix * 1.5),
-				\amp, Pexprand(0.001, 0.003),
+				\decay, Pkey(\mix/2),
+				\amp, Pexprand(0.1, 0.3),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
-		});
+
+		    ~chordal = Pbind(
+			    \instrument, \bpfsaw,
+			    \dur, Pwhite(10.0, 35.0, inf),
+			    \atk, Pwhite(4.0, 6.0, inf),
+			    \sus, 0,
+			    \rel, Pwhite(5.0, 6.0),
+			    \midinote, Pxrand(
+				                     [
+					                     [57, 62, 66, 67, 76],
+					                     [50, 55, 57, 59, 67],
+					                     [53, 55, 57, 60, 62],
+					                     [48, 57, 64, 65, 67],
+					                     [48, 52, 55, 57, 59],
+				                     ], inf),
+			    \cfmin, 80,
+			    \cfmax, 1350,
+			    \rqmin, Pexprand(0.0025, 0.025, inf),
+			    \amp, Pexprand(0.3, 0.55, inf),
+			    \group, ~mainGrp,
+			    \out, ~bus[\reverb]
+		    ).play;
+	    });
 
 	e.add(\highTide -> {
 		~people.stop;
@@ -413,19 +445,17 @@ ServerQuit.removeAll;
 	e.add(\oneshot2 -> {
 		"playing one shot 2".postln;
 		9.do{
-			Synth(
-				\resonator,
+			Synth(\resonator,
 				[
 					\atk, rrand(1.0, 3.0),
-					\sus, 0,
 					\rel, rrand(3.0, 4.0),
 					\rate, rrand(-1.0, 1.0),
-					\freq, exprand(125, 2500).round(62.5),
+					\freq, exprand(125, 2500).round(125),
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
 					\spos, rrand(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-					\decay, rrand(0.7, 0.9),
+					\decay, rrand(0.03, 0.05),
 					\pan, rrand(-1.0, 1.0),
-					\mix, rrand(0.2, 0.8),
+					\mix, 1.0,
 					\amp, exprand(0.001, 0.002),
 					\out, ~bus[\reverb]
 				],
@@ -464,19 +494,19 @@ ServerQuit.removeAll;
 			Pbind(
 				\instrument, \swells,
 				\dur, Pwhite(0.1, 1.0, inf),
-				\atk, Pwhite(0.01, 0.07, inf),
+				\atk, Pwhite(0.001, 0.03, inf),
 				\sus, 0.0,
-				\rel, Pwhite(0.001, 0.05),
+				\rel, Pwhite(0.001, 0.005),
 				\modamt, Pwhite(0.1, 1.0),
 				\carpartial, Pxrand([0.5, 0.75, 1, 1.125, 1.25, 1.5], 10),
 				\modpartial, Pwhite(-6, 1, inf).round(1),
 				\freq, Pexprand(300, 1500, inf).round(150),
 				\pan, Pwhite(-1.0, 1.0),
-				\amp, Pkey(\freq, inf).linlin(150, 1500, 0.5, 0.1),
+				\amp, Pkey(\freq, inf).linexp(150, 1500, 0.45, 0.1),
 				\out, ~bus[\reverb],
 				\group, ~mainGrp,
 			).play;
-		}
+		};
 	});
 
 	e.add(\oneshot5 -> {
@@ -493,11 +523,11 @@ ServerQuit.removeAll;
 				\modpartial, Pwhite(-6.2, 1.3, 5),
 				\freq, Pexprand(800, 2400).round(200),
 				\pan, Pwhite(-1.0, 1.0),
-				\amp, Pkey(\freq, inf).linlin(800, 2400, 0.6, 0.1),
+				\amp, Pkey(\freq, inf).linlin(800, 2400, 0.3, 0.15),
 				\out, ~bus[\reverb],
 				\group, ~mainGrp,
 			).play;
-		}
+		};
 	});
 
 	// declare our OSCdef for receiving the tide level from the python script (on the other raspberry pi, controlling the visualisation)
@@ -590,7 +620,6 @@ s.waitForBoot({
 		Out.ar(out, sig);
 	}).add;
 
-
 	// Ringz resonator SynthDef for samples to be played through
 	SynthDef(\resonator, {
 
@@ -616,7 +645,7 @@ s.waitForBoot({
 		// 0.0 is the raw sample input
 		// 1.0 is input from the Dust ugen, which creates random impulses
 		// clicks like this run through the resonator make nice pitched percussion sounds
-		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(6, 0.1), mix*2-1), freq, decay, amp);
+		sig = Ringz.ar(XFade2.ar(sig, Dust.ar(3, 0.1), mix*2-1), freq, decay, amp);
 
 		// multiply the signal by the envelope and amp
 		sig = sig * env * amp;
