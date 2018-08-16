@@ -59,7 +59,6 @@ def newReading():
     print("stepping ", mappedSteps, "of a possible 4715 steps")
     myStepper.step(mappedSteps, Adafruit_MotorHAT.BACKWARD,  Adafruit_MotorHAT.DOUBLE)
     mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
-    mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
     mappedFlow = round(mapper(mappedLevel, 0, 100, 100, 255))
     print("mappedFlow = ", mappedFlow)
     myMotor.setSpeed(mappedFlow)
