@@ -25,15 +25,16 @@
 // below the SynthDefs, other functions are added to the ServerTree evaluation list
 // once the server has successfully booted, with all SynthDefs evaluated and samples loaded,
 // 'done' will be printed in the console. The work will run indefinitely once it receives an osc message.
-
-  ///////////////////////////////
+"/Users/eliasberkhout/Documents/SuperCollider/SuperCollider.app/Contents/MacOS/sclang"
+///////////////////////////////
  //     CONFIGURATION         //
 ///////////////////////////////
 // declare the server and configure outputs, inputs, sample rate, memory allocation, etc
 (
 s = Server.local;
 s.options.outDevice_(
-	"Built-in Output"
+	// "K-Mix"
+	"Built-In Output"
 );
 s.options.numOutputBusChannels_(2);
 s.options.sampleRate_(44100);
@@ -199,21 +200,19 @@ ServerQuit.removeAll;
 		    ).play; // play this when the criteria for this event are filled by the tidal information sent in, ie. it's low tide
 
 		// a more musical accompaniment to the field recordings above. Four instances of the Pbind are created and run simultaneously.
-		~percussive = 4.do{
-			    Pbind(
-			        \instrument, \swells,
-			        \dur, Pexprand(0.1, 30, inf),
-			        \atk, Pexprand(0.0, 0.3, inf),
-			        \rel, Pwhite(0.08, 0.35, inf),
-			        \freq, Prand((Scale.phrygian.degrees+75).midicps,inf) * Pxrand([0.25, 0.5, 1], inf),
-			        \modpartial, Pxrand([-1, -0.5, 0.5, 1], inf),
-			        \carpartial, Pxrand([-2, -1, -0.5, 0.5, 1], inf),
-			        \index, Pwhite(0.0, 0.5, inf),
-	                \amp, Pexprand(0.1, 0.2),
-			        \group, ~mainGrp,
-			        \out, ~bus[\reverb],
-		        ).play;
-		}
+		~percussive = Pbind(
+			    \instrument, \swells,
+			    \dur, Pexprand(0.1, 30, inf),
+			    \atk, Pexprand(0.0, 0.3, inf),
+                \rel, Pwhite(0.08, 0.35, inf),
+		        \freq, Prand((Scale.phrygian.degrees+75).midicps,inf) * Pxrand([0.25, 0.5, 1], inf),
+		        \modpartial, Pxrand([-1, -0.5, 0.5, 1], inf),
+			    \carpartial, Pxrand([-2, -1, -0.5, 0.5, 1], inf),
+			    \index, Pwhite(0.0, 0.5, inf),
+	            \amp, Pexprand(0.1, 0.2),
+			    \group, ~mainGrp,
+			    \out, ~bus[\reverb],
+		    ).play;
 	});
 
 	// similar to above, an event to be called at mid-low tide – 25 to 50 when the tide level is mapped from 0 to 100
@@ -228,11 +227,7 @@ ServerQuit.removeAll;
 		~simpleRings.stop;
 		~midLowMix.stop;
 		~midLowPerc.stop;
-
-		b[\Social][1].value;
-
 		"midlow tide playing".postln;
-
 			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
 				\dur, Pexprand(0.5, 7.0),
@@ -247,26 +242,26 @@ ServerQuit.removeAll;
 				    [
 					    0.45,          // 45% of the time select from the \Social samples
 					    0.45,         // 45% of the time select from the \Industry samples
-					    0.1          // 10% of the time select from the \Nature samples
+					    0.1           // 10% of the time select from the \Nature samples
 			        ], inf),
-			    \rate, Pwrand([0.8, 0.9, 1.0, -1.0][0.32, 0.32, 0.32, 0.04], inf),
+			    \rate, Pwrand([0.8, 0.9, 1.0, -1.0], [0.32, 0.32, 0.32, 0.04], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
 				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
-				\rq, Pwhite(0.002, 0.08),
+				\rq, Pwhite(0.002, 0.01),
 				\freq, Prand((Scale.phrygian.degrees+66).midicps,inf) * Pxrand([1, 2], inf),
 				\bpfmix, Pwhite(0.4, 1.0),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
 			).play;
 
-		    ~midLowPerc = 5.do{Pbind(
+		    ~midLowPerc = Pbind(
 			    \instrument, \bpfsaw,
-			    \dur, Pwhite(3.0, 10.0, inf),
+			    \dur, Prand([1, 3, 5, 7, 30, 40], inf),
 			    \atk, Pexprand(2.0, 4.0, inf),
 			    \rel, Pexprand(1.0, 3.5, inf),
 			    \freq, Pexprand(0.75, 15.0, inf),
-			    \rqmin, Pwhite(0.01, 0.001, inf),
+			    \rqmin, Pwhite(0.01, 0.025, inf),
 			    \rqmax, Pkey(\rqmin, inf),
 			    \cfmin, Prand((Scale.phrygian.degrees+66).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
 				\cfmax, Pkey(\cfmin, inf),
@@ -274,8 +269,7 @@ ServerQuit.removeAll;
 				\amp, Pexprand(1.4, 2.5, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
-		).play;
-		}
+           ).play;
 	});
 
 
@@ -349,13 +343,13 @@ ServerQuit.removeAll;
 			    \sus, 0,
 			    \rel, Pwhite(5.0, 6.0),
 			    \midinote, Pxrand(
-				                     [
-					                     [57, 62, 66, 67, 76],
-					                     [50, 55, 57, 59, 67],
-					                     [53, 55, 57, 60, 62],
-					                     [48, 57, 64, 65, 67],
-					                     [48, 52, 55, 57, 59],
-				                     ], inf),
+				    [
+					    [57, 62, 66, 67, 76],
+					    [50, 55, 57, 59, 67],
+                        [53, 55, 57, 60, 62],
+	                    [48, 57, 64, 65, 67],
+	                    [48, 52, 55, 57, 59],
+				    ], inf),
 			    \cfmin, 80,
 			    \cfmax, 1350,
 			    \rqmin, Pexprand(0.0025, 0.025, inf),
@@ -372,24 +366,46 @@ ServerQuit.removeAll;
 		~midLowPerc.stop;
 		~midHighMix.stop;
 		~simpleRings.stop;
+		~chordal.stop;
 		~marimba.stop;
 		~highTideWaves.stop;
 		"high tide playing".postln;
 			~marimba = Pbind(
 				\instrument, \bpfsaw,
-				\dur, Pwhite(0.2, 2.0, inf),
-			    \freq, Prand([1/8, 1/5, 1/3, 2/5, 3/5], inf),
-				\rqmin, Pwhite(0.015, 0.02),
+				\dur, Pwhite(0.2, 10.0, inf),
+			    \freq, Prand([1/8, 1/5, 1/3, 2/5, 3/5, 1, 5, 10], inf),
+				\rqmin, Pwhite(0.01, 0.02),
 				\rqmax, Pkey(\rqmin),
 			    \cfmin, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
 				\cfmax, Pkey(\cfmin),
 				\atk, 3,
 				\sus, 1,
 				\rel, 5,
-				\amp, Pexprand(0.1, 0.4, inf),
+				\amp, Pexprand(0.1, 0.5, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
-			).play;
+			    ).play;
+
+		   ~highTideRings = Pbind(
+			    \instrument, \resonator,
+			    \dur, Pwhite(10, 45, inf),
+			    \atk, Pexprand(1.0, 3.0, inf),
+			    \rel, Pexprand(3.0, 6.0, inf),
+			    \rate, Pwhite(-1.0, 1.0, inf),
+			    \freq, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([1, 2], inf),
+			    \buf, Pwrand(
+				    [
+				        Prand(b[\Nature][0..b[\Nature].size]),
+				        Prand(b[\Social][0..b[\Social].size]),
+				    ],
+					[ 0.9, 0.1 ], inf),
+			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+			    \mix, Pexprand(0.1, 1.0),
+			    \decay, Pexprand(0.01, 0.9, inf),
+				\amp, Pexprand(0.1, 0.3),
+				\group, ~mainGrp,
+			    \out, ~bus[\reverb],
+		         ).play;
 
 		   ~highTideWaves = Pbind(
 				\instrument, \bpfbuf,
@@ -397,14 +413,14 @@ ServerQuit.removeAll;
 				\atk, Pwhite(5.0, 8.0),
 				\rel, Pwhite(4.0, 10.0),
 			    \buf, Pwrand(
-				                [
-				                    Prand(b[\Nature][0..b[\Nature].size]),
-				                    Prand(b[\Social][0..b[\Social].size]),
-				                    Prand(b[\Industry][0..b[\Industry].size]),
-			                    ],
-			                    [ 0.9, 0.05, 0.05 ], inf),
-				\rate, Pwhite(-0.05,0.05).midiratio,
-				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+				    [
+				        Prand(b[\Nature][0..b[\Nature].size]),
+				        Prand(b[\Social][0..b[\Social].size]),
+		                Prand(b[\Industry][0..b[\Industry].size]),
+                    ],
+			        [ 0.9, 0.05, 0.05 ], inf),
+				\rate, Pwhite(-1.0,1.0, inf),
+				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur).postln, inf),
 			    \pan, Pwhite(-1.0, 1.0),
 				\amp, Pexprand(0.6, 1.5),
 				\bpfmix, Pwhite(0.7, 1.0),
@@ -412,7 +428,7 @@ ServerQuit.removeAll;
 			    \rq, Pwhite(0.002, 0.05),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
-			).play;
+			    ).play;
 		});
 
 	// the next three events are oneshot events, which will be randomly played when a new value is received
