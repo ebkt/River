@@ -171,7 +171,12 @@ ServerQuit.removeAll;
 					inf),
 
 			    // each step, the sample should be played back at a random rate selected from this list
-				\rate, Pxrand([-1.0, -0.8, 0.8, 0.9, 0.95, 1.0], inf),
+				\rate, Pseq(
+				    [
+					    Pwhite(-1.0, 1.0, 5),
+				        Pwhite(-1.0, 1.0, 7),
+				        1.0, 1,
+				    ], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
 				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
@@ -539,7 +544,7 @@ ServerQuit.removeAll;
 
 	OSCdef.new(\tideLevel, { // the OSCdef key is \tideLevel
 		| msg | // although we receive a lot more information, this is the only bit we care about
-		~tideLevel = msg[1].linlin(-2.79, 4.21, 0, 100).round; // assign the global ~tideLevel variable to the amount received from the python script
+		~tideLevel = msg[1].linlin(-2.96, 4.21, 0, 100).round; // assign the global ~tideLevel variable to the amount received from the python script
 
 		// after mapping it to a more usable range (0-100), print it out
 		~tideLevel.postln;
