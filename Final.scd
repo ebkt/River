@@ -162,8 +162,8 @@ ServerQuit.removeAll;
 			    // the duration of the release stage of the envelope applied to the amplitude
 				\rel, Pexprand(5, 7),
 
-			    // nested sequence – select five samples from the \Industry folder, then five from the \Social folder, repeat indefinitely
-			   \buf, Pseq(
+			    // nested sequence – select 5 samples from the \Industry folder, 7 from the \Social folder, 1 from \Nature
+			    \buf, Pseq(
 				        [
 					        Prand(b[\Industry][0..b[\Industry].size], 5),
 					        Prand(b[\Social][0..b[\Social].size], 7),
@@ -171,12 +171,12 @@ ServerQuit.removeAll;
 				        ],
 					inf),
 
-			    // each step, the sample should be played back at a random rate selected from this list
+			    // \Industry and \Nature samples can be played back at random rates between -1 and 1. \Social plays back at normal speed only.
 				\rate, Pseq(
 				    [
 					    Pwhite(-1.0, 1.0, 5),
+					    1.0, 1,
 				        Pwhite(-1.0, 1.0, 7),
-				        1.0, 1,
 				    ], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
