@@ -9,6 +9,7 @@
   ////////////////////////////////
  // GENERAL LAYOUT EXPLANATION //
 ////////////////////////////////
+
 // the server is configured at the top of the program, and then a path to the sample folder is made
 // before the samples are actually loaded in (~makeBuffers), gloabl variables are declared
 // busses are created to allow audio to be routed to a reverb send effect, which is also given its own group
@@ -25,8 +26,8 @@
 // below the SynthDefs, other functions are added to the ServerTree evaluation list
 // once the server has successfully booted, with all SynthDefs evaluated and samples loaded,
 // 'done' will be printed in the console. The work will run indefinitely once it receives an osc message.
-"/Users/eliasberkhout/Documents/SuperCollider/SuperCollider.app/Contents/MacOS/sclang"
-///////////////////////////////
+
+  ///////////////////////////////
  //     CONFIGURATION         //
 ///////////////////////////////
 // declare the server and configure outputs, inputs, sample rate, memory allocation, etc
@@ -175,12 +176,12 @@ ServerQuit.removeAll;
 				\rate, Pseq(
 				    [
 					    Pwhite(-1.0, 1.0, 5),
-					    1.0, 1,
-				        Pwhite(-1.0, 1.0, 7),
+					    Pseq([1], 7),
+				        Pwhite(-1.0, 1.0, 1),
 				    ], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
-				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+			\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 
 			    // random amplitude between these numbers
 				\amp, Pexprand(0.5, 1.0),
@@ -306,7 +307,7 @@ ServerQuit.removeAll;
 					     Pwhite(-1.0, 1.0, 5),
 					     Pwhite(-1.0, 1.0, 2)
 			          ], inf),
-				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+				\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 				\amp, Pexprand(0.5, 1.0, inf),
 				\bpfmix, Pwhite(0.2, 1.0),
 				\rq, Pwhite(0.002, 0.02),
@@ -332,7 +333,7 @@ ServerQuit.removeAll;
 				           Pseq([1], 2),
 				           Pwhite(-1.0, 1.0, 1)
 			           ], inf),
-			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+			    \spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 		        \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([0.5, 1, 2], inf),
 			    \mix, Pwhite(0.3, 1.0),
 				\decay, Pkey(\mix/2),
@@ -404,7 +405,7 @@ ServerQuit.removeAll;
 				        Prand(b[\Social][0..b[\Social].size]),
 				    ],
 					[ 0.9, 0.1 ], inf),
-			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+			    \spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 			    \mix, Pexprand(0.1, 1.0),
 			    \decay, Pexprand(0.01, 0.9, inf),
 				\amp, Pexprand(0.1, 0.3),
@@ -425,7 +426,7 @@ ServerQuit.removeAll;
                     ],
 			        [ 0.9, 0.05, 0.05 ], inf),
 				\rate, Pwhite(-1.0,1.0, inf),
-				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur).postln, inf),
+				\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 			    \pan, Pwhite(-1.0, 1.0),
 				\amp, Pexprand(0.6, 1.5),
 				\bpfmix, Pwhite(0.7, 1.0),
@@ -469,15 +470,15 @@ ServerQuit.removeAll;
 			Synth(\resonator,
 				[
 					\atk, rrand(1.0, 3.0),
-					\rel, rrand(3.0, 4.0),
+					\rel, rrand(0.5, 0.8),
 					\rate, rrand(-1.0, 1.0),
-					\freq, exprand(125, 2500).round(125),
+					\freq, rrand(1250, 2500).round(125),
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
-					\spos, rrand(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
-					\decay, rrand(0.03, 0.05),
+					\spos, rrand(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
+					\decay, rrand(0.01, 0.02),
 					\pan, rrand(-1.0, 1.0),
 					\mix, 1.0,
-					\amp, exprand(0.001, 0.002),
+					\amp, exprand(0.01, 0.02),
 					\out, ~bus[\reverb]
 				],
 				~mainGrp
@@ -500,7 +501,7 @@ ServerQuit.removeAll;
 					\rqmax, 0.03,
 					\cfhzmin, 5,
 					\cfhzmax, 3000,
-					\amp, exprand(0.2,0.7),
+					\amp, exprand(0.2,0.5),
 					\pan, rrand(-0.9,0.9),
 					\out, ~bus[\reverb]
 				],
