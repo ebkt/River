@@ -150,6 +150,7 @@ ServerQuit.removeAll;
 			                        // eg. Pexprand (random numbers w/ exponential distribution)
 		                            // eg. Pseq, a sequence of values, with the next selected each step. Can be nested too.
 			                        // eg. Pxrand, choose randomly from a list, but never the same element twice in a row
+			                        // eg. Pwrand, choose randomly from a list based on weights, ie. choose x 10% of the time, and y 90% of the time
 
 			    // the instrument used for this pattern is \bpfbuf – a SynthDef which runs buffers through resonant bandpass filters
 				\instrument, \bpfbuf,
@@ -239,19 +240,13 @@ ServerQuit.removeAll;
 				\dur, Pexprand(0.5, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
-			    \buf, Pwrand( // Pwrand randomly selects from a list based on weights, here selecting Social/Industry 90% of the time, Nature 10%
+			    \buf, Pseq(
 				    [
-					Prand(b[\Social][0..b[\Social].size]),
-					Prand(b[\Industry][0..b[\Industry].size]),
-					Prand(b[\Nature][0..b[\Nature].size])
-			        ],
-				    [
-					    0.45,          // 45% of the time select from the \Social samples
-					    0.45,         // 45% of the time select from the \Industry samples
-					    0.1           // 10% of the time select from the \Nature samples
+					    Pwrand([Prand(b[\Nature][0..b[\Nature].size]), Prand(b[\Industry][0..b[\Industry].size])], [0.25, 0.75], 10),
+					    Prand(b[\Social][0..b[\Social].size], 5),
 			        ], inf),
-			    \rate, Pwrand([0.8, 0.9, 1.0, -1.0], [0.32, 0.32, 0.32, 0.04], inf),
-			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - Pkey(\dur), inf),
+			    \rate, Pseq([Pwhite(-1.0, 1.0, 10), Pseq([1], 5)], inf),
+			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
 				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
 				\rq, Pwhite(0.002, 0.01),
@@ -325,13 +320,14 @@ ServerQuit.removeAll;
 			    \buf, Pseq(
 				      [
 				          Prand(b[\Industry][0..b[\Industry].size], 3),
+					      Prand(b[\Social][0..b[\Social].size], 1),
 				          Prand(b[\Nature][0..b[\Nature].size], 4)
 			          ], inf),
 			    \rate, Pseq(
 				       [
 				           Pwhite(-1.0, 1.0, 3),
-				           Pseq([1], 2),
-				           Pwhite(-1.0, 1.0, 1)
+				           Pseq([1], 1),
+				           Pwhite(-1.0, 1.0, 4)
 			           ], inf),
 			    \spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 		        \freq, Prand((Scale.phrygian.degrees+69).midicps,inf) * Pxrand([0.5, 1, 2], inf),
