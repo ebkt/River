@@ -134,6 +134,7 @@ ServerQuit.removeAll;
 		// so the new samples will have faded in by then, giving a smooth, unnoticeable crossfade
 		~highTideWaves.stop;
 		~marimba.stop;
+	    ~chordal.stop;
 		~midLowMix.stop;
 		~midLowPerc.stop;
 		~midHighIndustry.stop;
@@ -234,6 +235,7 @@ ServerQuit.removeAll;
 		~simpleRings.stop;
 		~midLowMix.stop;
 		~midLowPerc.stop;
+		~chordal.stop;
 		"midlow tide playing".postln;
 			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
@@ -283,6 +285,7 @@ ServerQuit.removeAll;
 		~simpleRings.stop;
 		~highTideWaves.stop;
 		~marimba.stop;
+		~chordal.stop;
 		"mid high tide playing".postln;
 			~midHighMix = Pbind(
 				\instrument, \bpfbuf,
@@ -340,7 +343,7 @@ ServerQuit.removeAll;
 
 		    ~chordal = Pbind(
 			    \instrument, \bpfsaw,
-			    \dur, Pwhite(10.0, 35.0, inf),
+			    \dur, Pwhite(20.0, 45.0, inf),
 			    \atk, Pwhite(4.0, 6.0, inf),
 			    \sus, 0,
 			    \rel, Pwhite(5.0, 6.0),
@@ -395,13 +398,16 @@ ServerQuit.removeAll;
 			    \rel, Pexprand(3.0, 6.0, inf),
 			    \rate, Pwhite(-1.0, 1.0, inf),
 			    \freq, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([1, 2], inf),
-			    \buf, Pwrand(
+			    \buf,Pseq(
 				    [
-				        Prand(b[\Nature][0..b[\Nature].size]),
-				        Prand(b[\Social][0..b[\Social].size]),
-				    ],
-					[ 0.9, 0.1 ], inf),
-			    \spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
+				        Prand(b[\Nature][0..b[\Nature].size], 20),
+				        Prand(b[\Social][0..b[\Social].size], 1),
+					], inf),
+			    \spos, Pseq(
+				    [
+					    Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), 20),
+						Pseq([1], 1),
+			        ], inf),
 			    \mix, Pexprand(0.1, 1.0),
 			    \decay, Pexprand(0.01, 0.9, inf),
 				\amp, Pexprand(0.1, 0.3),
@@ -433,7 +439,7 @@ ServerQuit.removeAll;
 			    ).play;
 		});
 
-	// the next three events are oneshot events, which will be randomly played when a new value is received
+	// the next set of events are oneshot events, which will be randomly played when an osc message is received
 	// as a little audible signal that the visualisation is about to move
 	e.add(\oneshot1 -> {
 		"playing one shot 1".postln;
