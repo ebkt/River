@@ -6,9 +6,9 @@
 // the overall structure of the piece involves different "events" being run for four tide levels: low, mid-low, mid-high, and high tide
 // these events allow different collections of field recordings to be accessed and played back according to data received over osc
 
-  ////////////////////////////////
- // GENERAL LAYOUT EXPLANATION //
-////////////////////////////////
+  ////////////////////////////////////
+ // GENERAL LAYOUT EXPLANATION  //
+////////////////////////////////////
 
 // the server is configured at the top of the program, and then a path to the sample folder is made
 // before the samples are actually loaded in (~makeBuffers), gloabl variables are declared
@@ -25,11 +25,11 @@
 // the swells fm SynthDef is inspired by Daniel Nouri's tutorials, linked below
 // below the SynthDefs, other functions are added to the ServerTree evaluation list
 // once the server has successfully booted, with all SynthDefs evaluated and samples loaded,
-// 'done' will be printed in the console. The work will run indefinitely once it receives an osc message.
+// 'ready' will be printed in the console. The work will run indefinitely once it receives an osc message.
 
-  ///////////////////////////////
+  ////////////////////////////
  //     CONFIGURATION         //
-///////////////////////////////
+////////////////////////////
 // declare the server and configure outputs, inputs, sample rate, memory allocation, etc
 (
 s = Server.local;
@@ -86,7 +86,6 @@ ServerQuit.removeAll;
 };
 
 // cleanup function to be run when we boot the server, panic button (cmd + .) and when we quit the server
-
 ~cleanup = {
 	s.newBusAllocators;
 	ServerBoot.removeAll;
@@ -149,15 +148,15 @@ ServerQuit.removeAll;
 			                        // the Pbind expects pairs of symbols and values, separated by commas
                                     // P... streams allow different types of numbers to be added to each of the args at each step of the pattern
 			                        // eg. Pexprand (random numbers w/ exponential distribution)
-		                            // eg. Pseq, a sequence of values, with the next selected each step. Can be nested too.
-			                        // eg. Pxrand, choose randomly from a list, but never the same element twice in a row
-			                        // eg. Pwrand, choose randomly from a list based on weights, ie. choose x 10% of the time, and y 90% of the time
+		                            // Pseq, a sequence of values, with the next selected each step. Can be nested too.
+			                        // Pxrand, choose randomly from a list, but never the same element twice in a row
+			                        // Pwrand, choose randomly from a list based on weights, ie. choose x 10% of the time, and y 90% of the time
 
 			    // the instrument used for this pattern is \bpfbuf – a SynthDef which runs buffers through resonant bandpass filters
 				\instrument, \bpfbuf,
 
                 // the duration of the "clock" for triggering the next step in the pattern
-			    \dur, Pexprand(0.1, 4.5),
+			    \dur, Pexprand(0.1, 9.0),
 
 			    // the duration of the attack stage of the envelope applied to the amplitude
 				\atk, Pexprand(1.5, 4),
@@ -165,25 +164,25 @@ ServerQuit.removeAll;
 			    // the duration of the release stage of the envelope applied to the amplitude
 				\rel, Pexprand(5, 7),
 
-			    // nested sequence – select 5 samples from the \Industry folder, 7 from the \Social folder, 1 from \Nature
+			    // nested sequence – select 2 samples from the \Industry folder, 8 from the \Social folder, 1 from \Nature
 			    \buf, Pseq(
 				        [
-					        Prand(b[\Industry][0..b[\Industry].size], 5),
-					        Prand(b[\Social][0..b[\Social].size], 7),
+					        Prand(b[\Industry][0..b[\Industry].size], 4),
+					        Prand(b[\Social][0..b[\Social].size], 6),
 				            Prand(b[\Nature][0..b[\Nature].size], 1),
 				        ],
 					inf),
 
-			    // \Industry and \Nature samples can be played back at random rates between -1 and 1. \Social plays back at normal speed only.
+			    // \Industry and \Nature samples can be played back at random rates between -0.5 and 0.5. \Social plays back at normal rate only.
 				\rate, Pseq(
 				    [
-					    Pwhite(-1.0, 1.0, 5),
-					    Pseq([1], 7),
+					    Pwhite(-0.5, 0.5, 4),
+					    Pseq([1], 6),
 				        Pwhite(-1.0, 1.0, 1),
 				    ], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
-			\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
+			    \spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 
 			    // random amplitude between these numbers
 				\amp, Pexprand(0.5, 1.0),
@@ -207,7 +206,7 @@ ServerQuit.removeAll;
 				\out, ~bus[\reverb],
 		    ).play; // play this when the criteria for this event are filled by the tidal information sent in, ie. it's low tide
 
-		// a more musical accompaniment to the field recordings above. Four instances of the Pbind are created and run simultaneously.
+		// a more musical accompaniment to the field recordings above
 		~percussive = Pbind(
 			    \instrument, \swells,
 			    \dur, Pexprand(0.1, 30, inf),
@@ -247,7 +246,11 @@ ServerQuit.removeAll;
 					    Pwrand([Prand(b[\Nature][0..b[\Nature].size]), Prand(b[\Industry][0..b[\Industry].size])], [0.25, 0.75], 10),
 					    Prand(b[\Social][0..b[\Social].size], 5),
 			        ], inf),
-			    \rate, Pseq([Pwhite(-1.0, 1.0, 10), Pseq([1], 5)], inf),
+			    \rate, Pseq(
+				    [
+					    Pwhite(-0.75, 0.75, 10),
+					    Pseq([1], 5)
+			        ], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
 				\amp, Pexprand(0.4, 1.0),
 				\pan, Pwhite(-1.0, 1.0, inf),
@@ -294,6 +297,7 @@ ServerQuit.removeAll;
 				\rel, Pwhite(4.0, 6.0),
 		        \buf, Pseq( // play five social samples, then 5 industry, then two nature
 				      [
+					     Prand(b[\Social][0..b[\Social].size], 3),
 					     Prand(b[\Industry][0..b[\Industry].size], 5),
 					     Prand(b[\Nature][0..b[\Nature].size], 2)
 			          ], inf),
@@ -301,7 +305,7 @@ ServerQuit.removeAll;
 				             // so the first step of this nested sequence is 5 samples played back at their normal rate (1)
 				             // then 5 industry and 2 nature can play anywhere from -1.0 to 1.0 speed
 			          [
-					     Pseq([1], 5),
+					     Pseq([1], 3),
 					     Pwhite(-1.0, 1.0, 5),
 					     Pwhite(-1.0, 1.0, 2)
 			          ], inf),
@@ -328,7 +332,7 @@ ServerQuit.removeAll;
 			          ], inf),
 			    \rate, Pseq(
 				       [
-				           Pwhite(-1.0, 1.0, 3),
+				           Pwhite(-0.8, 0.8, 3),
 				           Pseq([1], 1),
 				           Pwhite(-1.0, 1.0, 4)
 			           ], inf),
@@ -341,7 +345,7 @@ ServerQuit.removeAll;
 				\out, ~bus[\reverb],
 			).play;
 
-		    ~chordal = Pbind(
+		   /* ~chordal = Pbind(
 			    \instrument, \bpfsaw,
 			    \dur, Pwhite(20.0, 45.0, inf),
 			    \atk, Pwhite(4.0, 6.0, inf),
@@ -361,7 +365,7 @@ ServerQuit.removeAll;
 			    \amp, Pexprand(0.3, 0.55, inf),
 			    \group, ~mainGrp,
 			    \out, ~bus[\reverb]
-		    ).play;
+		    ).play;*/
 	    });
 
 	e.add(\highTide -> {
@@ -396,18 +400,18 @@ ServerQuit.removeAll;
 			    \dur, Pwhite(10, 45, inf),
 			    \atk, Pexprand(1.0, 3.0, inf),
 			    \rel, Pexprand(3.0, 6.0, inf),
-			    \rate, Pwhite(-1.0, 1.0, inf),
 			    \freq, Prand((Scale.phrygian.degrees+60).midicps, inf) * Prand([1, 2], inf),
 			    \buf,Pseq(
 				    [
 				        Prand(b[\Nature][0..b[\Nature].size], 20),
 				        Prand(b[\Social][0..b[\Social].size], 1),
 					], inf),
-			    \spos, Pseq(
-				    [
-					    Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), 20),
-						Pseq([1], 1),
+			    \rate, Pseq(
+			        [
+			            Pwhite(-1.0, 1.0, 20),
+					    Pseq([1], 1)
 			        ], inf),
+			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
 			    \mix, Pexprand(0.1, 1.0),
 			    \decay, Pexprand(0.01, 0.9, inf),
 				\amp, Pexprand(0.1, 0.3),
@@ -420,15 +424,17 @@ ServerQuit.removeAll;
 			    \dur, Pseq([4, 1.5, 2.2, 3.1], inf),
 				\atk, Pwhite(5.0, 8.0),
 				\rel, Pwhite(4.0, 10.0),
-			    \buf, Pwrand(
+			    \buf, Pseq(
 				    [
-				        Prand(b[\Nature][0..b[\Nature].size]),
-				        Prand(b[\Social][0..b[\Social].size]),
-		                Prand(b[\Industry][0..b[\Industry].size]),
-                    ],
-			        [ 0.9, 0.05, 0.05 ], inf),
-				\rate, Pwhite(-1.0,1.0, inf),
-				\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
+					Prand(b[\Nature][0..b[\Nature].size], 20),
+					Prand(b[\Social][0..b[\Social].size], 1),
+                    ], inf),
+				\spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
+			    \rate, Pseq(
+			        [
+			            Pwhite(-1.0, 1.0, 20),
+					    Pseq([1], 1),
+			        ], inf),
 			    \pan, Pwhite(-1.0, 1.0),
 				\amp, Pexprand(0.6, 1.5),
 				\bpfmix, Pwhite(0.7, 1.0),
@@ -783,7 +789,7 @@ s.waitForBoot({
 	// wait for all the above to finish
 	s.sync;
 
-	// post done in the console
-	"done".postln;
+	// post ready in the console
+	"ready".postln;
 });
 )
