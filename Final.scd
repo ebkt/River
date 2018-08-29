@@ -11,25 +11,26 @@
 ////////////////////////////////////
 
 // the server is configured at the top of the program, and then a path to the sample folder is made
-// before the samples are actually loaded in (~makeBuffers), gloabl variables are declared
-// busses are created to allow audio to be routed to a reverb send effect, which is also given its own group
-// following this, events are declared for each of the tide levels, as well as "oneshot" events
-// oneshot events are small sequences or sounds which are randomly selected and played each time supercollider receives an osc message
-// this is intended to be an audible signal that the motorised components of the work are about to move/already moving
+// before the samples are actually loaded in (~makeBuffers), global variables are declared,
+// busses are created to allow audio to be routed to a reverb send effect, which is also given its own group.
+// following this, events are declared for each of the tide levels, as well as "oneshot" events.
+// "oneshot" events are small sequences or sounds which are randomly selected and played each time supercollider receives an osc message
+// this is intended to be an audible signal that the motorised components of the work are about to move/already moving.
 // an OscDef is used to receive osc messages and map the value received to a usable range, before using case statements
-// to decide which tide level event should be triggered
+// to decide which tide level event should be triggered.
 // underneath this, functions are added to the ServerBoot and ServerQuit evaluation list, so they are run each time
-// the server boots or quits
-// finally, SynthDefs are used to provide reusable recipes for creating sound
+// the server boots or quits.
+// finally, SynthDefs are declared, providing reusable recipes for creating sounds in each of the tidal events
 // the bpfsaw, bpfbuf and reverb SynthDefs are inspired by Eli Fieldsteel's tutorials, linked above
-// the swells fm SynthDef is inspired by Daniel Nouri's tutorials, linked below
-// below the SynthDefs, other functions are added to the ServerTree evaluation list
-// once the server has successfully booted, with all SynthDefs evaluated and samples loaded,
+// the swells fm SynthDef is inspired by Daniel Nouri's tutorials, linked below.
+// below the SynthDefs, other functions are added to the ServerTree evaluation list.
+// once the server has successfully booted, with all SynthDefs evaluated and samples loaded into buffers,
 // 'ready' will be printed in the console. The work will run indefinitely once it receives an osc message.
 
   ////////////////////////////
  //     CONFIGURATION         //
 ////////////////////////////
+
 // declare the server and configure outputs, inputs, sample rate, memory allocation, etc
 (
 s = Server.local;
@@ -52,13 +53,14 @@ ServerQuit.removeAll;
 ~out = 0;
 ~tideLevel = 0;
 
-// create a path to this folder and then go into the next folder, "Samples/" to find audio to be loaded into buffers for playback
+// create a path to the folder containing this project and then go into the next folder, "Samples/",
+// which contains folders of categorised field recordings: nature, social, industry and musical
 ~path = PathName(thisProcess.nowExecutingPath).parentPath++"Samples/";
 
 // define functions to create buffers and busses
 // this makes a dictionary to store each of the folders contained within the "Samples/" folder
 // this way, adding/removing samples doesn't change the code
-// and subfolders can be referred to by name – easier than memorising numbers
+// and subfolders can be referred to by name/symbol, which is easier than memorising numbers
 ~makeBuffers = {
 	b = Dictionary.new;
 	PathName(~path).entries.do{
@@ -79,7 +81,6 @@ ServerQuit.removeAll;
 // create a reverb bus as a send effect – here we're creating a dictionary of busses
 // that way we can also refer to our output buses by name, not numbers
 // e.g. signals we want to go to the reverb get sent to \reverb
-
 ~makeBusses = {
 	~bus = Dictionary.new;
 	~bus.add(\reverb -> Bus.audio(s,2));
@@ -121,16 +122,16 @@ ServerQuit.removeAll;
 
 // events 1 to 4 are controlled by the tide level
 // at high tide, more water sounds are made audible
-// at low tide, more sounds of day to day life, people and construction are audible
+// at low tide, more sounds of day to day life, people and construction/industry are audible
 // a lot of the time buffers will be run through different types of filters which emphasise certain resonant frequencies
 // each event plays a more musical accompaniment alongside the samples to emphasise the idea of not just the sound of a place
 // but the music of a place, in the more traditional sense of the word
 
 	e.add(\lowTide -> { // create a new event for \lowTide – when the tide level is mapped 0-100, this is from 0 to 25
 
-		// first, stop all other patterns playing
-		// the samples that are already playing will fade out but it'll take a few seconds,
-		// so the new samples will have faded in by then, giving a smooth, unnoticeable crossfade
+		// first, stop all other patterns playing.
+		// the samples that are already playing will fade out because of the amplitude envelope declared in the SynthDef,
+		// allowing new samples to fade in, creating an unnoticeable crossfade.
 		~highTideWaves.stop;
 		~marimba.stop;
 	    ~chordal.stop;
@@ -140,15 +141,15 @@ ServerQuit.removeAll;
 		~simpleRings.stop;
 		~people.stop;
 		~percussive.stop;
-		"low tide playing".postln;  // post what event is playing to the console
+		"low tide playing".postln;  // post the event playing to the console
 		   ~people = Pbind(         // create a Pbind, which is like a "pattern", where inf is the number of steps in the pattern.
 			                        // The Pbind will stop at the smallest number of steps provided,
 			                        // so passing inf (which is the default) to all means the pattern will run indefinitely
 			                        // arguments from the SynthDef in use can be modified here
 			                        // the Pbind expects pairs of symbols and values, separated by commas
                                     // P... streams allow different types of numbers to be added to each of the args at each step of the pattern
-			                        // eg. Pexprand (random numbers w/ exponential distribution)
-		                            // Pseq, a sequence of values, with the next selected each step. Can be nested too.
+			                        // eg. Pexprand, random numbers w/ exponential distribution
+		                            // Pseq, a sequence of values, with the next value selected each step. Can be nested too.
 			                        // Pxrand, choose randomly from a list, but never the same element twice in a row
 			                        // Pwrand, choose randomly from a list based on weights, ie. choose x 10% of the time, and y 90% of the time
 
@@ -164,12 +165,13 @@ ServerQuit.removeAll;
 			    // the duration of the release stage of the envelope applied to the amplitude
 				\rel, Pexprand(5, 7),
 
-			    // nested sequence – select 2 samples from the \Industry folder, 8 from the \Social folder, 1 from \Nature
+			    // nested sequence – randomly select 4 samples from the \Industry folder, 6 from the \Social folder, 1 from \Nature
 			    \buf, Pseq(
 				        [
 					        Prand(b[\Industry][0..b[\Industry].size], 4),
 					        Prand(b[\Social][0..b[\Social].size], 6),
 				            Prand(b[\Nature][0..b[\Nature].size], 1),
+					        Prand(b[\Musical][0..b[\Musical].size], 1),
 				        ],
 					inf),
 
@@ -179,6 +181,7 @@ ServerQuit.removeAll;
 					    Pwhite(-0.5, 0.5, 4),
 					    Pseq([1], 6),
 				        Pwhite(-1.0, 1.0, 1),
+					    Pseq([1], 1),
 				    ], inf),
 
 			    // random startpos between 0 and the end of the sample minus the length of the current step in the Pbind
@@ -190,7 +193,7 @@ ServerQuit.removeAll;
 			    // random panning – -1.0 is hard left, 1.0 is hard right
 				\pan, Pwhite(-1.0, 1.0),
 
-			    // random resonance on the filter – lower numbers result in higher resonance, creating clearer pitches
+			    // random resonance on the filter – lower values result in higher resonance, creating clearer pitches
 				\rq, Pwhite(0.001, 0.008),
 
 			    // randomly select filter frequencies in the phrygian mode, and pitch or up/down an octave
@@ -199,7 +202,7 @@ ServerQuit.removeAll;
 			    // random mix values – 0.0 is raw samples, 1.0 is full bandpass filter mix
 				\bpfmix, Pwhite(0.5, 1.0),
 
-			    // this synth should be in the main group, so it can be sent to the \reverb send
+			    // this synth should be in the main group, so it can be routed to the \reverb send
 				\group, ~mainGrp,
 
 			    // the output bus is the reverb send
@@ -245,11 +248,13 @@ ServerQuit.removeAll;
 				    [
 					    Pwrand([Prand(b[\Nature][0..b[\Nature].size]), Prand(b[\Industry][0..b[\Industry].size])], [0.25, 0.75], 10),
 					    Prand(b[\Social][0..b[\Social].size], 5),
+					    Pxrand(b[\Musical][0..b[\Musical].size], 1),
 			        ], inf),
 			    \rate, Pseq(
 				    [
 					    Pwhite(-0.75, 0.75, 10),
-					    Pseq([1], 5)
+					    Pseq([1], 5),
+					    Pseq([1], 1)
 			        ], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
 				\amp, Pexprand(0.4, 1.0),
@@ -261,6 +266,7 @@ ServerQuit.removeAll;
 				\out, ~bus[\reverb],
 			).play;
 
+		    // alongside the resonant buffers, play a sparse, percussive accompaniment
 		    ~midLowPerc = Pbind(
 			    \instrument, \bpfsaw,
 			    \dur, Prand([1, 3, 5, 7, 30, 40], inf),
@@ -295,18 +301,20 @@ ServerQuit.removeAll;
 				\dur, Pexprand(1.0, 3.5),
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
-		        \buf, Pseq( // play five social samples, then 5 industry, then two nature
+		        \buf, Pseq( // play five social samples, then five industry, then two nature
 				      [
-					     Prand(b[\Social][0..b[\Social].size], 3),
+					     Prand(b[\Social][0..b[\Social].size], 5),
 					     Prand(b[\Industry][0..b[\Industry].size], 5),
+					     Pxrand(b[\Musical][0..b[\Musical].size], 1),
 					     Prand(b[\Nature][0..b[\Nature].size], 2)
 			          ], inf),
 				\rate, Pseq( // social samples sound a bit too alien and different speeds, because of the sound of voices
-				             // so the first step of this nested sequence is 5 samples played back at their normal rate (1)
-				             // then 5 industry and 2 nature can play anywhere from -1.0 to 1.0 speed
+				                   // so the first step of this nested sequence is 3 samples played back at their normal rate (1)
+				                   // then 5 industry and 2 nature can play anywhere from -1.0 to 1.0 speed
 			          [
-					     Pseq([1], 3),
+					     Pseq([1], 5),
 					     Pwhite(-1.0, 1.0, 5),
+					     Pseq([1], 1),
 					     Pwhite(-1.0, 1.0, 2)
 			          ], inf),
 				\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
@@ -318,6 +326,8 @@ ServerQuit.removeAll;
 				\out, ~bus[\reverb],
 			).play;
 
+		    // the \instrument here is similar to the bpfbuf in that it adds/emphasises musical pitches to the field recordings
+	        // but uses the Ringz physical modelling resonator ugen instead of a resonant bandpass filter
 			~simpleRings = Pbind(
 				\instrument, \resonator,
 			    \dur, Pwhite(0.5, 6.0),
@@ -404,12 +414,12 @@ ServerQuit.removeAll;
 			    \buf,Pseq(
 				    [
 				        Prand(b[\Nature][0..b[\Nature].size], 20),
-				        Prand(b[\Social][0..b[\Social].size], 1),
+				        Prand(b[\Social][0..b[\Social].size], 4),
 					], inf),
 			    \rate, Pseq(
 			        [
 			            Pwhite(-1.0, 1.0, 20),
-					    Pseq([1], 1)
+					    Pseq([1], 4)
 			        ], inf),
 			    \spos, Pwhite(0, Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate), inf),
 			    \mix, Pexprand(0.1, 1.0),
@@ -455,16 +465,16 @@ ServerQuit.removeAll;
 				[
 					\atk, exprand(1.5, 5.0),
 					\rel, exprand(8.0, 15.0),
-					\c1, exprand(4,10.0),
-					\c2, exprand(2.0,5).neg,
+					\c1, exprand(4, 10.0),
+					\c2, exprand(2.0, 5).neg,
 					\freq, exprand(0.05, 19.0),
-					\detune, rrand(0.1,4),
+					\detune, rrand(0.1, 4),
 					\cfmin, 1000,
 					\cfmax, 2500,
 					\rqmin, 0.2,
 					\rqmax, 0.02,
 					\amp, exprand(0.6, 1.5),
-					\pan, rrand(-1.0,1.0),
+					\pan, rrand(-1.0, 1.0),
 					\out, ~bus[\reverb],
 				],
 				~mainGrp
