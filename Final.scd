@@ -37,6 +37,7 @@ s = Server.local;
 s.options.outDevice_(
 	// "K-Mix"
 	"Built-In Output"
+	// "Soundflower (2ch)"
 );
 s.options.numOutputBusChannels_(2);
 s.options.sampleRate_(44100);
@@ -157,23 +158,23 @@ ServerQuit.removeAll;
 				\instrument, \bpfbuf,
 
                 // the duration of the "clock" for triggering the next step in the pattern
-			    \dur, Pexprand(0.1, 9.0),
+			    \dur, Pwhite(0.1, 9.0),
 
 			    // the duration of the attack stage of the envelope applied to the amplitude
-				\atk, Pexprand(1.5, 4),
+				\atk, Pexprand(4.0, 6.5),
 
 			    // the duration of the release stage of the envelope applied to the amplitude
-				\rel, Pexprand(5, 7),
+				\rel, Pexprand(7, 10),
 
 			    // nested sequence – randomly select 4 samples from the \Industry folder, 6 from the \Social folder, 1 from \Nature
+			    // then a 50/50 chance of a random \Musical sample being selected, or another \Social sample
 			    \buf, Pseq(
 				        [
 					        Prand(b[\Industry][0..b[\Industry].size], 4),
 					        Prand(b[\Social][0..b[\Social].size], 6),
 				            Prand(b[\Nature][0..b[\Nature].size], 1),
-					        Prand(b[\Musical][0..b[\Musical].size], 1),
-				        ],
-					inf),
+					        Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.2, 0.8], 1),
+				        ], inf),
 
 			    // \Industry and \Nature samples can be played back at random rates between -0.5 and 0.5. \Social plays back at normal rate only.
 				\rate, Pseq(
@@ -212,7 +213,7 @@ ServerQuit.removeAll;
 		// a more musical accompaniment to the field recordings above
 		~percussive = Pbind(
 			    \instrument, \swells,
-			    \dur, Pexprand(0.1, 30, inf),
+			    \dur, Pwhite(0.1, 30, inf),
 			    \atk, Pexprand(0.0, 0.3, inf),
                 \rel, Pwhite(0.08, 0.35, inf),
 		        \freq, Prand((Scale.phrygian.degrees+75).midicps,inf) * Pxrand([0.25, 0.5, 1], inf),
@@ -241,14 +242,14 @@ ServerQuit.removeAll;
 		"midlow tide playing".postln;
 			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pexprand(0.5, 7.0),
+				\dur, Pwhite(0.5, 7.0),
 				\atk, Pexprand(0.8, 4),
 				\rel, Pexprand(5, 7),
 			    \buf, Pseq(
 				    [
 					    Pwrand([Prand(b[\Nature][0..b[\Nature].size]), Prand(b[\Industry][0..b[\Industry].size])], [0.25, 0.75], 10),
 					    Prand(b[\Social][0..b[\Social].size], 5),
-					    Pxrand(b[\Musical][0..b[\Musical].size], 1),
+					    Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.4, 0.6], 1),
 			        ], inf),
 			    \rate, Pseq(
 				    [
@@ -278,7 +279,7 @@ ServerQuit.removeAll;
 			    \cfmin, Prand((Scale.phrygian.degrees+66).midicps, inf) * Prand([0.5, 1, 2, 3], inf),
 				\cfmax, Pkey(\cfmin, inf),
 			    \pan, Pwhite(-1.0, 1.0, inf),
-				\amp, Pexprand(1.4, 2.5, inf),
+				\amp, Pexprand(1.0, 1.75, inf),
 				\group, ~mainGrp,
 				\out, ~bus[\reverb],
            ).play;
@@ -298,14 +299,14 @@ ServerQuit.removeAll;
 		"mid high tide playing".postln;
 			~midHighMix = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pexprand(1.0, 3.5),
+				\dur, Pwhite(1.0, 3.5),
 				\atk, Pwhite(1.0, 5.0),
 				\rel, Pwhite(4.0, 6.0),
 		        \buf, Pseq( // play five social samples, then five industry, then two nature
 				      [
 					     Prand(b[\Social][0..b[\Social].size], 5),
 					     Prand(b[\Industry][0..b[\Industry].size], 5),
-					     Pxrand(b[\Musical][0..b[\Musical].size], 1),
+					     Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.5, 0.5], 1),
 					     Prand(b[\Nature][0..b[\Nature].size], 2)
 			          ], inf),
 				\rate, Pseq( // social samples sound a bit too alien and different speeds, because of the sound of voices
@@ -490,13 +491,13 @@ ServerQuit.removeAll;
 					\atk, rrand(1.0, 3.0),
 					\rel, rrand(0.5, 0.8),
 					\rate, rrand(-1.0, 1.0),
-					\freq, rrand(1250, 2500).round(125),
+					\freq, exprand(Scale.phrygian.degrees+105, Scale.phrygian.degrees+117).midicps,
 					\buf, b[\Industry][0..b[\Industry].size]++b[\Social][0..b[\Social].size]++b[\Nature][0..b[\Nature].size].choose,
 					\spos, rrand(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
-					\decay, rrand(0.01, 0.02),
+					\decay, rrand(0.1, 0.2),
 					\pan, rrand(-1.0, 1.0),
 					\mix, 1.0,
-					\amp, exprand(0.01, 0.02),
+					\amp, exprand(0.05, 0.1),
 					\out, ~bus[\reverb]
 				],
 				~mainGrp
@@ -530,19 +531,19 @@ ServerQuit.removeAll;
 
 	e.add(\oneshot4 -> {
 		"playing one shot 4".postln;
-		6.do{
+		4.do{
 			Pbind(
 				\instrument, \swells,
 				\dur, Pwhite(0.1, 1.0, inf),
-				\atk, Pwhite(0.001, 0.03, inf),
-				\sus, 0.0,
+				\atk, Pwhite(0.001, 0.009, inf),
+				\sus, 0.025,
 				\rel, Pwhite(0.001, 0.005),
 				\modamt, Pwhite(0.1, 1.0),
-				\carpartial, Pxrand([0.5, 0.75, 1, 1.125, 1.25, 1.5], 10),
+				\carpartial, Pxrand([0.5, 0.75, 1, 1.125, 1.25, 1.5], 5),
 				\modpartial, Pwhite(-6, 1, inf).round(1),
-				\freq, Pexprand(300, 1500, inf).round(150),
+				\freq, Pexprand(600, 1500, inf).round(150),
 				\pan, Pwhite(-1.0, 1.0),
-				\amp, Pkey(\freq, inf).linexp(150, 1500, 0.45, 0.1),
+				\amp, Pkey(\freq, inf).linexp(150, 1500, 0.25, 0.1),
 				\out, ~bus[\reverb],
 				\group, ~mainGrp,
 			).play;
@@ -551,7 +552,7 @@ ServerQuit.removeAll;
 
 	e.add(\oneshot5 -> {
 		"playing one shot 5".postln;
-		5.do{
+		10.do{
 			Pbind(
 				\instrument, \swells,
 				\dur, Pwhite(0.3, 0.9),
