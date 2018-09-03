@@ -242,18 +242,18 @@ ServerQuit.removeAll;
 		"midlow tide playing".postln;
 			~midLowMix = Pbind(
 				\instrument, \bpfbuf,
-				\dur, Pwhite(0.5, 7.0),
-				\atk, Pexprand(0.8, 4),
-				\rel, Pexprand(5, 7),
+				\dur, Pwhite(0.8, 5.0),
+				\atk, Pexprand(2.0, 4.0),
+				\rel, Pexprand(5.0, 7.0),
 			    \buf, Pseq(
 				    [
 					    Pwrand([Prand(b[\Nature][0..b[\Nature].size]), Prand(b[\Industry][0..b[\Industry].size])], [0.25, 0.75], 10),
 					    Prand(b[\Social][0..b[\Social].size], 5),
-					    Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.4, 0.6], 1),
+					    Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.3, 0.7], 1),
 			        ], inf),
 			    \rate, Pseq(
 				    [
-					    Pwhite(-0.75, 0.75, 10),
+					    Pwhite(-0.75, 1.0, 10),
 					    Pseq([1], 5),
 					    Pseq([1], 1)
 			        ], inf),
@@ -304,10 +304,10 @@ ServerQuit.removeAll;
 				\rel, Pwhite(4.0, 6.0),
 		        \buf, Pseq( // play five social samples, then five industry, then two nature
 				      [
-					     Prand(b[\Social][0..b[\Social].size], 5),
-					     Prand(b[\Industry][0..b[\Industry].size], 5),
-					     Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.5, 0.5], 1),
-					     Prand(b[\Nature][0..b[\Nature].size], 2)
+					     Prand(b[\Social][0..b[\Social].size], 10),
+					     Prand(b[\Industry][0..b[\Industry].size], 10),
+					     Pwrand([Prand(b[\Musical][0..b[\Musical].size]), Prand(b[\Social][0..b[\Social].size])], [0.4, 0.6], 1),
+					     Prand(b[\Nature][0..b[\Nature].size], 4)
 			          ], inf),
 				\rate, Pseq( // social samples sound a bit too alien and different speeds, because of the sound of voices
 				                   // so the first step of this nested sequence is 3 samples played back at their normal rate (1)
