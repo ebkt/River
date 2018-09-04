@@ -35,8 +35,8 @@
 (
 s = Server.local;
 s.options.outDevice_(
-	// "K-Mix"
-	"Built-In Output"
+	"K-Mix"
+	// "Built-In Output"
 	// "Soundflower (2ch)"
 );
 s.options.numOutputBusChannels_(2);
@@ -313,10 +313,10 @@ ServerQuit.removeAll;
 				                   // so the first step of this nested sequence is 3 samples played back at their normal rate (1)
 				                   // then 5 industry and 2 nature can play anywhere from -1.0 to 1.0 speed
 			          [
-					     Pseq([1], 5),
-					     Pwhite(-1.0, 1.0, 5),
+					     Pseq([1], 10),
+					     Pwhite(-1.0, 1.0, 10),
 					     Pseq([1], 1),
-					     Pwhite(-1.0, 1.0, 2)
+					     Pwhite(-1.0, 1.0, 4)
 			          ], inf),
 				\spos, Pwhite(0, (Pkey(\buf).collect(_.numFrames) - (Pkey(\dur) * s.sampleRate)), inf),
 				\amp, Pexprand(0.5, 1.0, inf),
