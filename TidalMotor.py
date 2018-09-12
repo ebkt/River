@@ -1,4 +1,4 @@
-# Elias Berkhout brackish, Jun-Sep 2018
+# brackish, Jun-Sep 2018
 # This script reads tidal data from an online json file and uses that data
 # to control one stepper motor and one dc motor connected to an Adafruit motorhat
 # apscheduler is used to run the script every three minutes, but the data online is updated only
